@@ -1,0 +1,25 @@
+# depslib dependency file v1.0
+1711294889 source:c:\users\lenovo\documents\lstiiing\tetriste\main.cpp
+	<iostream>
+	<cstdlib>
+	<ctime>
+	"generalHeader.h"
+
+1711299555 c:\users\lenovo\documents\lstiiing\tetriste\generalheader.h
+	"gameDeclaration.h"
+	<iostream>
+	<cstdlib>
+	<ctime>
+	<math.h>
+
+1711299427 c:\users\lenovo\documents\lstiiing\tetriste\gamedeclaration.h
+	"pieceDeclaration.h"
+	"colorShape.h"
+
+1711240527 c:\users\lenovo\documents\lstiiing\tetriste\piecedeclaration.h
+	"colorShape.h"
+	<string>
+
+1711240495 c:\users\lenovo\documents\lstiiing\tetriste\colorshape.h
+	<string>
+
