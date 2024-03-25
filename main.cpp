@@ -6,12 +6,17 @@ using namespace std;
 
 void displayMenu()
 {
-    cout << "Main Menu:" << endl;
-    cout << "j. Insert on the left" << endl;
-    cout << "k. Insert on the right" << endl;
-    cout << "c. Shift by color" << endl;
-    cout << "s. Shift by shape" << endl;
-    cout << "q. Quit" << endl;
+  cout << "            ____________________________________________\n";
+  cout << "           |                |                             |\n";
+  cout << "           |       *******       *******                  |\n";
+  cout << "           |       * T * E * T * R * I * S * T * E *       \n";
+  cout << "           |        Menu Options:                         |\n"; // Clearer label
+  cout << "           |           1) Insert Left                     |\n";
+  cout << "           |           2) Insert Right                    |\n";  // Consistent formatting
+  cout << "           |           3) Shift by Color                  |\n";
+  cout << "           |           4) Shift by Shape                  |\n";  // Option "s" changed to "4"
+  cout << "           |           5) Quit                            |\n";  // Added "5" and rephrased
+  cout << "           |______________________________________________|\n\n\n\n\n";
 }
 
 void displayGamePieces(Piece **pieces, int numPieces)

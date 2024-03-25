@@ -47,52 +47,53 @@ string displayPieceAsString(Piece *piece)
     switch (color)
     {
     case T_Color::BLUE:
-        colorStr = "Blue";
+        colorStr = "Blue";// Blue color
         break;
     case T_Color::YELLOW:
-        colorStr = "Yellow";
+        colorStr = "Yellow"; // Yellow color
         break;
     case T_Color::RED:
-        colorStr = "Red";
+        colorStr = "Red";   // Red color
         break;
     case T_Color::GREEN:
-        colorStr = "Green";
+        colorStr = "Green";    // Green color
         break;
     case T_Color::PURPLE:
-        colorStr = "Purple";
+        colorStr = "Purple";  // Purple color
         break;
     case T_Color::WHITE:
-        colorStr = "White";
+        colorStr = "White"; // White color
         break;
     }
 
     switch (shape)
     {
     case T_Shape::SQUARE:
-        shapeStr = "Square";
+        shapeStr = "Square"; // Square Unicode character
         break;
     case T_Shape::DIAMOND:
-        shapeStr = "Diamond";
+        shapeStr = "Diamond"; // Diamond Unicode character
         break;
     case T_Shape::CIRCLE:
-        shapeStr = "Circle";
+        shapeStr = "Circle"; // Circle Unicode character
         break;
     case T_Shape::TRIANGLE:
-        shapeStr = "Triangle";
+        shapeStr = "Triangle"; // Triangle Unicode character
         break;
     case T_Shape::STAR:
-        shapeStr = "Star";
+        shapeStr = "Star"; // Star Unicode character
         break;
     case T_Shape::PLUS:
-        shapeStr = "Plus";
+        shapeStr = "Plus"; // Plus Unicode character
         break;
     }
 
-    // Combine color and shape strings
+    // Combine color and shape strings and reset color
     string displayStr = colorStr + " " + shapeStr;
 
     return displayStr;
 }
+
 
 // The constructor of the Piece class
 //  The constructor of the Piece class
@@ -332,8 +333,6 @@ int Game::updateGame(Game *game)
 
                 game->piecesCount -= combinationSize;
 
-                // Updating the linking for the shapes and colors
-                Piece *nextPiece = nullptr;
                 for (int i = 0; i < combinationSize; i++)
                 {
                     currentPiece->shapePrev->shapeNext = currentPiece->shapeNext;
@@ -344,6 +343,7 @@ int Game::updateGame(Game *game)
                     currentPiece = currentPiece->nextPiece;
                 }
 
+                cout <<"houliaa" <<endl;
                 // Removing the pieces from the single circular linked list
                 if (beforeCurrent == nullptr)
                 { // In this case the head got removed

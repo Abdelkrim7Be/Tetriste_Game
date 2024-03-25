@@ -1,10 +1,10 @@
 # depslib dependency file v1.0
-1711405264 source:c:\users\lenovo\documents\lstiiing\tetriste\main.cpp
+1711409680 source:c:\users\lenovo\documents\lstiiing\tetriste\main.cpp
 	<iostream>
 	<ctime>
 	"generalHeader.h"
 
-1711405492 c:\users\lenovo\documents\lstiiing\tetriste\generalheader.h
+1711409614 c:\users\lenovo\documents\lstiiing\tetriste\generalheader.h
 	"gameDeclaration.h"
 	<iostream>
 	<cstdlib>
