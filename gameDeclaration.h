@@ -12,16 +12,17 @@ public:
     int score;
 
     int piecesCount;
-    int colorCount;
-    int shapeCount;
+    int colorIndex;
+    int shapeIndex;
 
     Game(int colorCount, int shapeCount);
     ~Game();
 
-    Game* initializeGame(int colorCount, int shapeCount);
+    Game* initializeGame(int colorINDE, int shapeCount);
     Piece *drawPiece(int colorCount, int shapeCount);
     string display(T_Color color, T_Shape shape);
     Piece* retrieveTail(Game* game);
+    Piece **getPieces();
 
     void insertPieceInRight(Game *game, Piece *piece);
     void insertPieceInLeft(Game *game, Piece *piece);

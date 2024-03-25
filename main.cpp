@@ -1,11 +1,11 @@
 #include <iostream>
-#include <cstdlib>
 #include <ctime>
 #include "generalHeader.h"
 
 using namespace std;
 
-void displayMenu() {
+void displayMenu()
+{
     cout << "Main Menu:" << endl;
     cout << "j. Insert on the left" << endl;
     cout << "k. Insert on the right" << endl;
@@ -14,43 +14,52 @@ void displayMenu() {
     cout << "q. Quit" << endl;
 }
 
-void displayGamePieces(Piece **pieces, int numPieces) {
-    for (int i = 0; i < numPieces; ++i) {
+void displayGamePieces(Piece **pieces, int numPieces)
+{
+    for (int i = 0; i < numPieces; ++i)
+    {
         cout << "Piece " << i + 1 << ": " << pieces[i]->displayPiece() << " ";
     }
     cout << endl;
 }
 
-int main() {
-    // Initialization of the random number generator
-    srand(time(NULL));
+int main()
+{
+    // Seed the random number generator
+    srand(static_cast<unsigned int>(time(nullptr)));
 
-    // Initialize the game with custom color and shape counts
-    Game *currentGame = initializeGame(4, 4); // Example: 4 colors, 4 shapes
+    // Generate random color and shape indices
+    int randomColorIndex = rand() % static_cast<int>(T_Color::WHITE);
+    int randomShapeIndex = rand() % static_cast<int>(T_Shape::PLUS);
+
+    // Use the random indices to initialize the game
+    Game *currentGame = initializeGame(randomColorIndex, randomShapeIndex);
 
     int continueGame = 1;
-    cout <<"heyyyy" << endl;
 
-    while (continueGame) {
-        // Allocate memory for nextPieces array
-        Piece **nextPieces = new Piece*[5];
+    // Generate and insert the initial five pieces into the game
+    for (int i = 0; i < 5; ++i)
+    {
+        randomColorIndex = rand() % static_cast<int>(T_Color::WHITE);
+        randomShapeIndex = rand() % static_cast<int>(T_Shape::PLUS);
+        Piece *newPiece = currentGame->drawPiece(randomColorIndex, randomShapeIndex);
+        currentGame->insertPieceInRight(currentGame, newPiece);
+    }
 
-        // Check if memory allocation is successful
-        if (nextPieces == nullptr) {
-            cerr << "Memory allocation failed. Exiting program." << endl;
-            return 1;
-        }
+    while (continueGame)
+    {
 
-        for (int i = 0; i < 5; i++) {
-            nextPieces[i] = currentGame->drawPiece(4, 4); // Example: 4 colors, 4 shapes
-        }
+        randomColorIndex = rand() % static_cast<int>(T_Color::WHITE);
+        randomShapeIndex = rand() % static_cast<int>(T_Shape::PLUS);
+
+        Piece * nextPiece = currentGame->drawPiece(randomColorIndex, randomShapeIndex);
 
         // Display current game state
         cout << "Current game state: ";
-        displayGamePieces(nextPieces, 5);
+        displayGamePieces(currentGame->getPieces(), currentGame->piecesCount);
 
         // Display next piece
-        cout << "Next piece: " << nextPieces[4]->displayPiece() << endl;
+        cout << "Next piece: " << nextPiece->displayPiece() << endl;
 
         // Display menu and get player input
         displayMenu();
@@ -59,35 +68,35 @@ int main() {
         cin >> choice;
         cout << endl;
 
-        switch (choice) {
-            case 'j':
-                currentGame->insertPieceInLeft(currentGame, nextPieces[4]);
-                break;
-            case 'k':
-                currentGame->insertPieceInRight(currentGame, nextPieces[4]);
-                break;
-            // Other cases for color and shape shifting...
-            case 'q':
-                // Quit the game
-                continueGame = 0;
-                break;
-            default:
-                // Invalid choice
-                cout << "Invalid choice. Please try again." << endl;
-                break;
+        switch (choice)
+        {
+        case 'j':
+            currentGame->insertPieceInLeft(currentGame, nextPiece);
+            break;
+        case 'k':
+            currentGame->insertPieceInRight(currentGame, nextPiece);
+            break;
+        // Other cases for color and shape shifting...
+        case 'q':
+            // Quit the game
+            continueGame = 0;
+            break;
+        default:
+            // Invalid choice
+            cout << "Invalid choice. Please try again." << endl;
+            break;
         }
 
-        // Free memory for nextPieces array
-        for (int i = 0; i < 5; i++) {
-            delete nextPieces[i];
-        }
-        delete[] nextPieces;
+        cout << currentGame->piecesCount <<endl;
+
+        delete nextPiece;
 
         // Update game state
         int scoreChange = currentGame->updateGame(currentGame);
 
         // Check if the game is over
-        if (scoreChange == -1) {
+        if (scoreChange == -1)
+        {
             cout << "Congratulations! You've won!" << endl;
             continueGame = 0;
         }
