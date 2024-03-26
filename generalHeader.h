@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <windows.h>
 #include <math.h>
 
 using namespace std;
@@ -37,6 +38,7 @@ Game::~Game()
 
 string displayPieceAsString(Piece *piece)
 {
+
     T_Color color = static_cast<T_Color>(static_cast<int>(piece->color));
     T_Shape shape = static_cast<T_Shape>(static_cast<int>(piece->shape));
 
@@ -47,49 +49,49 @@ string displayPieceAsString(Piece *piece)
     switch (color)
     {
     case T_Color::BLUE:
-        colorStr = "Blue";// Blue color
+        colorStr = "\033[034m"; // Blue color
         break;
     case T_Color::YELLOW:
-        colorStr = "Yellow"; // Yellow color
+        colorStr = "\033[33m"; // Yellow color
         break;
     case T_Color::RED:
-        colorStr = "Red";   // Red color
+        colorStr = "\033[31m"; // Red color
         break;
     case T_Color::GREEN:
-        colorStr = "Green";    // Green color
+        colorStr = "\033[32m"; // Green color
         break;
     case T_Color::PURPLE:
-        colorStr = "Purple";  // Purple color
+        colorStr = "\033[35m"; // Purple color
         break;
     case T_Color::WHITE:
-        colorStr = "White"; // White color
+        colorStr = "\033[37m"; // White color
         break;
     }
 
     switch (shape)
     {
     case T_Shape::SQUARE:
-        shapeStr = "Square"; // Square Unicode character
+        shapeStr = "■"; // Square Unicode character
         break;
     case T_Shape::DIAMOND:
-        shapeStr = "Diamond"; // Diamond Unicode character
+        shapeStr = "◊"; // Diamond Unicode character
         break;
     case T_Shape::CIRCLE:
-        shapeStr = "Circle"; // Circle Unicode character
+        shapeStr = "○"; // Circle Unicode character
         break;
     case T_Shape::TRIANGLE:
-        shapeStr = "Triangle"; // Triangle Unicode character
+        shapeStr = "▲"; // Triangle Unicode character
         break;
     case T_Shape::STAR:
-        shapeStr = "Star"; // Star Unicode character
+        shapeStr = "★"; // Star Unicode character
         break;
     case T_Shape::PLUS:
-        shapeStr = "Plus"; // Plus Unicode character
+        shapeStr = "✚"; // Plus Unicode character
         break;
     }
 
     // Combine color and shape strings and reset color
-    string displayStr = colorStr + " " + shapeStr;
+    string displayStr = colorStr + shapeStr + "\033[0m";
 
     return displayStr;
 }
