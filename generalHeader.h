@@ -313,6 +313,7 @@ int Game::updateGame(Game *game)
         Piece *beforeCurrent = nullptr;
         Piece *tail = retrieveTail(game);
         int combinationSize = 0;
+
         int combo = 0;
         while (currentPiece != nullptr && currentPiece->nextPiece != game->head)
         {
@@ -333,17 +334,18 @@ int Game::updateGame(Game *game)
 
                 game->piecesCount -= combinationSize;
 
+
+
                 for (int i = 0; i < combinationSize; i++)
                 {
                     currentPiece->shapePrev->shapeNext = currentPiece->shapeNext;
                     currentPiece->shapeNext->shapePrev = currentPiece->shapePrev;
                     currentPiece->colorPrev->colorNext = currentPiece->colorNext;
                     currentPiece->colorNext->colorPrev = currentPiece->colorPrev;
-                    delete currentPiece;
+                    currentPiece->~Piece();
                     currentPiece = currentPiece->nextPiece;
                 }
 
-                cout <<"houliaa" <<endl;
                 // Removing the pieces from the single circular linked list
                 if (beforeCurrent == nullptr)
                 { // In this case the head got removed

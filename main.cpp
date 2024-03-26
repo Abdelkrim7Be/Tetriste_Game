@@ -94,7 +94,6 @@ int main()
 
         cout << currentGame->piecesCount <<endl;
 
-        delete nextPiece;
 
         // Update game state
         int scoreChange = currentGame->updateGame(currentGame);
