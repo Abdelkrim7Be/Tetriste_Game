@@ -32,8 +32,8 @@ public:
     int updateGame(Game* game);
     void removePieceFromRelationships(Piece* piece);
 
-    void colorShifting(Game *game, T_Color color);
-    void shapeShifting(Game *game, T_Shape shape);
+    void colorShifting(Game *game, T_Color color, int countOfColors);
+    void shapeShifting(Game *game, T_Shape shape, int countOfShapes);
 
     void nextPieces(Game *game, Piece *nextPieces);
     void updateScores(int score, string name);

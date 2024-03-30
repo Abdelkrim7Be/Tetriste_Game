@@ -1,6 +1,0 @@
-#ifndef TETRISTE_CONSOLE_H_INCLUDED
-#define TETRISTE_CONSOLE_H_INCLUDED
-
-void displayMenu();
-
-#endif // TETRISTE_CONSOLE_H_INCLUDED
