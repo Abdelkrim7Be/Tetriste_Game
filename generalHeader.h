@@ -39,63 +39,53 @@ Game::~Game()
 string displayPieceAsString(Piece *piece)
 {
 
-    T_Color color = static_cast<T_Color>(static_cast<int>(piece->color));
-    T_Shape shape = static_cast<T_Shape>(static_cast<int>(piece->shape));
+   T_Color color = static_cast<T_Color>(static_cast<int>(piece->color));
+   T_Shape shape = static_cast<T_Shape>(static_cast<int>(piece->shape));
 
     // Convert enums to strings
     string colorStr;
     string shapeStr;
 
-     switch (color)
-    {
-    case T_Color::BLUE:
-        colorStr = "Blue";// Blue color
-        break;
-    case T_Color::YELLOW:
-        colorStr = "Yellow"; // Yellow color
-        break;
-    case T_Color::RED:
-        colorStr = "Red";   // Red color
-        break;
-    case T_Color::GREEN:
-        colorStr = "Green";    // Green color
-        break;
-    case T_Color::PURPLE:
-        colorStr = "Purple";  // Purple color
-        break;
-    case T_Color::WHITE:
-        colorStr = "White"; // White color
-        break;
+    switch (color) {
+        case T_Color::BLUE:
+            colorStr = "\033[34m"; // Blue color
+            break;
+        case T_Color::YELLOW:
+            colorStr = "\033[33m"; // Yellow color
+            break;
+        case T_Color::RED:
+            colorStr = "\033[31m"; // Red color
+            break;
+        case T_Color::GREEN:
+            colorStr = "\033[32m"; // Green color
+            break;
+        case T_Color::WHITE:
+            colorStr = "\033[37m"; // White color
+            break;
+    }
+    switch (shape) {
+        case T_Shape::SQUARE:
+            shapeStr = "Square"; // Square Unicode character
+            break;
+        case T_Shape::DIAMOND:
+            shapeStr = "Diamond"; // Diamond Unicode character
+            break;
+        case T_Shape::CIRCLE:
+            shapeStr = "Circle"; // Circle Unicode character
+            break;
+        case T_Shape::TRIANGLE:
+            shapeStr = "Triangle"; // Triangle Unicode character
+            break;
+        case T_Shape::STAR:
+            shapeStr = "Star"; // Star Unicode character
+            break;
     }
 
-    switch (shape)
-    {
-    case T_Shape::SQUARE:
-        shapeStr = "Square"; // Square Unicode character
-        break;
-    case T_Shape::DIAMOND:
-        shapeStr = "Diamond"; // Diamond Unicode character
-        break;
-    case T_Shape::CIRCLE:
-        shapeStr = "Circle"; // Circle Unicode character
-        break;
-    case T_Shape::TRIANGLE:
-        shapeStr = "Triangle"; // Triangle Unicode character
-        break;
-    case T_Shape::STAR:
-        shapeStr = "Star"; // Star Unicode character
-        break;
-    case T_Shape::PLUS:
-        shapeStr = "Plus"; // Plus Unicode character
-        break;
-    }
-
-    // Combine color and shape strings and reset color
-    string displayStr = colorStr + " " + shapeStr;
+    // Combine color and shape strings
+    string displayStr = colorStr + shapeStr + "\033[0m";
 
     return displayStr;
 }
-
 // The constructor of the Piece class
 //  The constructor of the Piece class
 Piece::Piece(T_Color clr, T_Shape spe, Piece *nextPiece, Piece *shapePrev, Piece *shapeNext, Piece *colorPrev, Piece *colorNext)

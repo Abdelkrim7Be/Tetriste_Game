@@ -1,4 +1,4 @@
-
+#include <windows.h>
 #include <iostream>
 #include <ctime>
 #include "generalHeader.h"
@@ -56,9 +56,6 @@ T_Color displayColorMenu() {
         case 'g':
             chosenColor = T_Color::GREEN;
             break;
-        case 'p':
-            chosenColor = T_Color::PURPLE;
-            break;
         case 'w':
             chosenColor = T_Color::WHITE;
             break;
@@ -112,9 +109,6 @@ T_Shape displayShapeMenu() {
         case 'a':
             chosenShape = T_Shape::STAR;
             break;
-        case 'p':
-            chosenShape = T_Shape::PLUS;
-            break;
         default:
             // Handle invalid choice
             cout << "Invalid shape choice." << endl;
@@ -166,12 +160,20 @@ void countOfColorsAndShapes(Game* game, int &countOfColors, int &countOfShapes) 
 
 int main()
 {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hConsole != INVALID_HANDLE_VALUE) {
+       DWORD mode = 0;
+       if (GetConsoleMode(hConsole, &mode)) {
+          mode |=0x0004;
+          SetConsoleMode(hConsole, mode);
+       }
+    }
     // Seed the random number generator
     srand(static_cast<unsigned int>(time(nullptr)));
 
     // Generate random color and shape indices
     int randomColorIndex = rand() % static_cast<int>(T_Color::WHITE);
-    int randomShapeIndex = rand() % static_cast<int>(T_Shape::PLUS);
+    int randomShapeIndex = rand() % static_cast<int>(T_Shape::STAR);
 
     // Use the random indices to initialize the game
     Game *currentGame = initializeGame(randomColorIndex, randomShapeIndex);
@@ -185,7 +187,7 @@ int main()
     for (int i = 0; i < 5; ++i)
     {
         randomColorIndex = rand() % static_cast<int>(T_Color::WHITE);
-        randomShapeIndex = rand() % static_cast<int>(T_Shape::PLUS);
+        randomShapeIndex = rand() % static_cast<int>(T_Shape::STAR);
         Piece *newPiece = currentGame->drawPiece(randomColorIndex, randomShapeIndex);
         currentGame->insertPieceInRight(currentGame, newPiece);
     }
@@ -196,7 +198,7 @@ int main()
         cout << "\n\n\n";
 
         randomColorIndex = rand() % static_cast<int>(T_Color::WHITE);
-        randomShapeIndex = rand() % static_cast<int>(T_Shape::PLUS);
+        randomShapeIndex = rand() % static_cast<int>(T_Shape::STAR);
 
         Piece * nextPiece = currentGame->drawPiece(randomColorIndex, randomShapeIndex);
 
@@ -205,6 +207,7 @@ int main()
         displayMenu();
         // Display current game state
         cout << "Current game state: ";
+        currentGame->updateGame(currentGame);
         displayGamePieces(currentGame->getPieces(), currentGame->piecesCount);
 
         // Display next piece

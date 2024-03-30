@@ -11,7 +11,7 @@ enum class T_Color
     YELLOW,
     RED,
     GREEN,
-    PURPLE,
+    //PURPLE,
     WHITE
 };
 
@@ -21,8 +21,8 @@ enum class T_Shape
     DIAMOND,
     CIRCLE,
     TRIANGLE,
-    STAR,
-    PLUS
+    STAR
+   // PLUS
 };
 
 
