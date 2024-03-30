@@ -189,11 +189,7 @@ void Game::insertPieceInRight(Game *game, Piece *newPiece)
             game->piecesCount++;
             //cout << "Insertion success in right" << endl;
         }
-        else
-        {
-            cout << "Failed to insert: Stack overflow" << endl;
-            throw std::runtime_error("Stack overflow");
-        }
+
     }
     catch (const std::exception &e)
     {
