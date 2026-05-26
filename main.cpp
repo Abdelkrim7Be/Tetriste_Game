@@ -1,121 +1,85 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
-#include <ctime>
 #include <vector>
+#include <ctime>
+#include <cstdlib>
 #include <cmath>
 #include "gameDeclaration.h"
-#include "generalHeader.h"
+#include "pieceDeclaration.h"
 #include "AssetManager.h"
 #include "Renderer.h"
-#include <SFML/Audio.hpp>
+#include "UserManager.h"
 
-sf::SoundBuffer generateBeep(float frequency, float duration) {
-    const unsigned int sampleRate = 44100;
-    const unsigned int sampleCount = static_cast<unsigned int>(sampleRate * duration);
-    std::vector<sf::Int16> samples(sampleCount);
-
-    for (unsigned int i = 0; i < sampleCount; ++i) {
-        samples[i] = static_cast<sf::Int16>(30000 * std::sin(2 * 3.14159f * frequency * i / sampleRate));
-    }
-
-    sf::SoundBuffer buffer;
-    buffer.loadFromSamples(&samples[0], sampleCount, 1, sampleRate);
-    return buffer;
-}
-
-sf::SoundBuffer generateMusicTrack() {
-    const unsigned int sampleRate = 44100;
-    // A simple 4-note loop (A3, C4, E4, G4) - 2 seconds total
-    float notes[] = {220.0f, 261.63f, 329.63f, 392.00f};
-    const float durationPerNote = 0.5f;
-    const unsigned int totalSamples = static_cast<unsigned int>(sampleRate * durationPerNote * 4);
-    std::vector<sf::Int16> samples(totalSamples);
-
-    for (int n = 0; n < 4; ++n) {
-        unsigned int start = static_cast<unsigned int>(n * sampleRate * durationPerNote);
-        unsigned int end = static_cast<unsigned int>((n + 1) * sampleRate * durationPerNote);
-        for (unsigned int i = start; i < end; ++i) {
-            // Simple sine wave with a basic envelope to reduce clicking
-            float volume = 1.0f;
-            if (i - start < 441) volume = (i - start) / 441.0f; // Fade in
-            if (end - i < 441) volume = (end - i) / 441.0f;     // Fade out
-            
-            samples[i] = static_cast<sf::Int16>(10000 * volume * std::sin(2 * 3.14159f * notes[n] * i / sampleRate));
-        }
-    }
-
-    sf::SoundBuffer buffer;
-    buffer.loadFromSamples(&samples[0], totalSamples, 1, sampleRate);
-    return buffer;
-}
-
-void generatePlaceholderAssets(AssetManager &assets) {
-    T_Color colors[] = {T_Color::BLUE, T_Color::YELLOW, T_Color::RED, T_Color::GREEN, T_Color::WHITE};
-    T_Shape shapes[] = {T_Shape::SQUARE, T_Shape::DIAMOND, T_Shape::CIRCLE, T_Shape::TRIANGLE, T_Shape::STAR};
+void generatePlaceholderAssets(AssetManager& assets) {
+    // Generate simple colored shapes if files are missing
+    sf::RenderTexture rt;
+    rt.create(40, 40);
     
-    // Generate sound effects
-    assets.addSoundBuffer("place", generateBeep(440.0f, 0.1f));   // A4 note
-    assets.addSoundBuffer("match", generateBeep(880.0f, 0.2f));   // A5 note
-    assets.addSoundBuffer("shift", generateBeep(660.0f, 0.05f));  // E5 note
-    assets.addSoundBuffer("music", generateMusicTrack());         // Background loop
-
-    const int size = 50;
-    const int padding = 5;
-
-    for (auto c : colors) {
-        for (auto s : shapes) {
-            sf::RenderTexture rt;
-            rt.create(size, size);
+    for (int c = 0; c < 5; ++c) {
+        for (int s = 0; s < 5; ++s) {
             rt.clear(sf::Color::Transparent);
+            T_Color color = static_cast<T_Color>(c);
+            T_Shape shape = static_cast<T_Shape>(s);
             
-            sf::Color color;
-            switch(c) {
-                case T_Color::BLUE: color = sf::Color(52, 152, 219); break;
-                case T_Color::YELLOW: color = sf::Color(241, 196, 15); break;
-                case T_Color::RED: color = sf::Color(231, 76, 60); break;
-                case T_Color::GREEN: color = sf::Color(46, 204, 113); break;
-                case T_Color::WHITE: color = sf::Color(236, 240, 241); break;
+            sf::Color sfColor;
+            switch(color) {
+                case T_Color::BLUE: sfColor = sf::Color::Blue; break;
+                case T_Color::YELLOW: sfColor = sf::Color::Yellow; break;
+                case T_Color::RED: sfColor = sf::Color::Red; break;
+                case T_Color::GREEN: sfColor = sf::Color::Green; break;
+                case T_Color::WHITE: sfColor = sf::Color::White; break;
             }
             
-            sf::Shape* shapeObj = nullptr;
+            sf::CircleShape cs;
+            sf::RectangleShape rs;
+            sf::ConvexShape convex;
             
-            if (s == T_Shape::SQUARE) {
-                sf::RectangleShape* rect = new sf::RectangleShape(sf::Vector2f(size - 2*padding, size - 2*padding));
-                shapeObj = rect;
-            } else if (s == T_Shape::CIRCLE) {
-                sf::CircleShape* circle = new sf::CircleShape((size - 2*padding) / 2.0f);
-                shapeObj = circle;
-            } else if (s == T_Shape::TRIANGLE) {
-                sf::CircleShape* tri = new sf::CircleShape((size - 2*padding) / 2.0f, 3);
-                shapeObj = tri;
-            } else if (s == T_Shape::DIAMOND) {
-                sf::CircleShape* diamond = new sf::CircleShape((size - 2*padding) / 2.0f, 4);
-                diamond->setRotation(45);
-                // Adjust position due to rotation
-                diamond->setOrigin((size - 2*padding) / 2.0f, (size - 2*padding) / 2.0f);
-                diamond->setPosition(size/2.0f, size/2.0f);
-                shapeObj = diamond;
-            } else if (s == T_Shape::STAR) {
-                // Approximate star with 5-sided circle for now, or use a vertex array
-                sf::CircleShape* star = new sf::CircleShape((size - 2*padding) / 2.0f, 5);
-                shapeObj = star;
+            switch(shape) {
+                case T_Shape::CIRCLE:
+                    cs.setRadius(18);
+                    cs.setFillColor(sfColor);
+                    cs.setPosition(2, 2);
+                    rt.draw(cs);
+                    break;
+                case T_Shape::SQUARE:
+                    rs.setSize(sf::Vector2f(32, 32));
+                    rs.setFillColor(sfColor);
+                    rs.setPosition(4, 4);
+                    rt.draw(rs);
+                    break;
+                case T_Shape::TRIANGLE:
+                    convex.setPointCount(3);
+                    convex.setPoint(0, sf::Vector2f(20, 4));
+                    convex.setPoint(1, sf::Vector2f(4, 36));
+                    convex.setPoint(2, sf::Vector2f(36, 36));
+                    convex.setFillColor(sfColor);
+                    rt.draw(convex);
+                    break;
+                case T_Shape::DIAMOND:
+                    convex.setPointCount(4);
+                    convex.setPoint(0, sf::Vector2f(20, 4));
+                    convex.setPoint(1, sf::Vector2f(36, 20));
+                    convex.setPoint(2, sf::Vector2f(20, 36));
+                    convex.setPoint(3, sf::Vector2f(4, 20));
+                    convex.setFillColor(sfColor);
+                    rt.draw(convex);
+                    break;
+                case T_Shape::STAR:
+                    convex.setPointCount(10);
+                    for (int i = 0; i < 10; ++i) {
+                        float angle = i * 2 * 3.14159f / 10;
+                        float r = (i % 2 == 0) ? 18.0f : 8.0f;
+                        convex.setPoint(i, sf::Vector2f(20 + r * std::cos(angle), 20 + r * std::sin(angle)));
+                    }
+                    convex.setFillColor(sfColor);
+                    rt.draw(convex);
+                    break;
             }
-
-            if (shapeObj) {
-                shapeObj->setFillColor(color);
-                shapeObj->setOutlineThickness(2);
-                shapeObj->setOutlineColor(sf::Color(255, 255, 255, 150));
-                if (s != T_Shape::DIAMOND) {
-                    shapeObj->setPosition(padding, padding);
-                }
-                rt.draw(*shapeObj);
-                delete shapeObj;
-            }
-            
             rt.display();
             
             std::string name;
-            switch(c) {
+            switch(color) {
                 case T_Color::BLUE: name = "blue"; break;
                 case T_Color::YELLOW: name = "yellow"; break;
                 case T_Color::RED: name = "red"; break;
@@ -123,7 +87,7 @@ void generatePlaceholderAssets(AssetManager &assets) {
                 case T_Color::WHITE: name = "white"; break;
             }
             std::string sname;
-            switch(s) {
+            switch(shape) {
                 case T_Shape::SQUARE: sname = "square"; break;
                 case T_Shape::DIAMOND: sname = "diamond"; break;
                 case T_Shape::CIRCLE: sname = "circle"; break;
@@ -143,12 +107,53 @@ int main()
 {
     srand(static_cast<unsigned int>(time(nullptr)));
 
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Tetriste Graphical", sf::Style::Titlebar | sf::Style::Close);
+    UserManager userManager;
+    std::string pseudo, password;
+    bool loggedIn = false;
+
+    while (!loggedIn) {
+        std::cout << "\n------------------------------------------" << std::endl;
+        std::cout << "   TETRISTE: MASTER ALGORITHMICS" << std::endl;
+        std::cout << "------------------------------------------" << std::endl;
+        std::cout << "1. Login" << std::endl;
+        std::cout << "2. Register" << std::endl;
+        std::cout << "3. Exit" << std::endl;
+        std::cout << "Choice: ";
+        int choice;
+        if (!(std::cin >> choice)) {
+            std::cin.clear();
+            std::cin.ignore(1000, '\n');
+            continue;
+        }
+
+        if (choice == 3) return 0;
+
+        std::cout << "Pseudo: ";
+        std::cin >> pseudo;
+        std::cout << "Password: ";
+        std::cin >> password;
+
+        if (choice == 1) {
+            if (userManager.login(pseudo, password)) {
+                loggedIn = true;
+                std::cout << "Welcome back, " << pseudo << "!" << std::endl;
+            } else {
+                std::cout << "Invalid pseudo or password." << std::endl;
+            }
+        } else if (choice == 2) {
+            if (userManager.registerUser(pseudo, password)) {
+                std::cout << "Registration successful! Please login." << std::endl;
+            } else {
+                std::cout << "Pseudo already taken." << std::endl;
+            }
+        }
+    }
+
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Tetriste Graphical", sf::Style::Default);
     window.setFramerateLimit(60);
 
     AssetManager assets;
     
-    // Ensure assets directory exists
     #ifdef _WIN32
         system("if not exist assets mkdir assets");
     #else
@@ -157,13 +162,12 @@ int main()
 
     generatePlaceholderAssets(assets);
     
-    // Font discovery
     std::vector<std::string> fontPaths = {
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/TTF/DejaVuSans.ttf",
         "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",
         "C:\\Windows\\Fonts\\arial.ttf",
-        "assets/font.ttf" // Local fallback
+        "assets/font.ttf"
     };
 
     bool fontLoaded = false;
@@ -174,34 +178,20 @@ int main()
         }
     }
 
-    if (!fontLoaded) {
-        std::cerr << "Warning: Could not load any system fonts. UI text may not display." << std::endl;
-    }
-
-    Renderer renderer(window, assets);
+    Renderer renderer(window, assets, userManager);
     sf::Sound sound;
     
-    // Setup background music
     sf::Sound music;
     if (assets.hasSoundBuffer("music")) {
         music.setBuffer(assets.getSoundBuffer("music"));
         music.setLoop(true);
-        music.setVolume(50.0f); // Lower volume for background
+        music.setVolume(50.0f);
         music.play();
     }
 
-    int randomColorIndex = rand() % 5;
-    int randomShapeIndex = rand() % 5;
-    
-    // In this implementation, initializeGame creates a new Game object on the heap
-    Game *currentGame = Game(0,0).initializeGame(randomColorIndex, randomShapeIndex);
-
-    for (int i = 0; i < 5; ++i) {
-        Piece *newPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
-        currentGame->insertPieceInRight(currentGame, newPiece);
-    }
-
-    Piece *nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
+    GameState state = GameState::MENU;
+    Game *currentGame = nullptr;
+    Piece *nextPiece = nullptr;
 
     while (window.isOpen())
     {
@@ -210,57 +200,149 @@ int main()
         {
             if (event.type == sf::Event::Closed)
                 window.close();
+
+            if (event.type == sf::Event::Resized)
+            {
+                unsigned int width = std::max(800u, event.size.width);
+                unsigned int height = std::max(600u, event.size.height);
+                if (event.size.width < 800 || event.size.height < 600) {
+                    window.setSize(sf::Vector2u(width, height));
+                }
+                sf::FloatRect visibleArea(0, 0, static_cast<float>(width), static_cast<float>(height));
+                window.setView(sf::View(visibleArea));
+            }
             
             if (event.type == sf::Event::KeyPressed) {
-                bool actionTaken = false;
-                bool shifted = false;
-                if (event.key.code == sf::Keyboard::J) {
-                    currentGame->insertPieceInLeft(currentGame, nextPiece);
-                    actionTaken = true;
-                } else if (event.key.code == sf::Keyboard::K) {
-                    currentGame->insertPieceInRight(currentGame, nextPiece);
-                    actionTaken = true;
-                } else if (event.key.code == sf::Keyboard::C) {
-                    currentGame->colorShifting(currentGame, T_Color::RED, 0); 
-                    shifted = true;
-                } else if (event.key.code == sf::Keyboard::S) {
-                    currentGame->shapeShifting(currentGame, T_Shape::SQUARE, 0);
-                    shifted = true;
-                }
-                
-                if (actionTaken && currentGame->piecesCount > 0) {
-                    if (assets.hasSoundBuffer("place")) {
-                        sound.setBuffer(assets.getSoundBuffer("place"));
-                        sound.play();
+                if (state == GameState::MENU) {
+                    if (event.key.code == sf::Keyboard::Up) {
+                        renderer.setMenuSelection((renderer.getMenuSelection() + 2) % 3);
+                    } else if (event.key.code == sf::Keyboard::Down) {
+                        renderer.setMenuSelection((renderer.getMenuSelection() + 1) % 3);
+                    } else if (event.key.code == sf::Keyboard::Enter) {
+                        int selection = renderer.getMenuSelection();
+                        if (selection == 0) { // PLAY
+                            if (currentGame) delete currentGame;
+                            if (nextPiece) delete nextPiece;
+                            currentGame = Game(0,0).initializeGame(rand() % 5, rand() % 5);
+                            for (int i = 0; i < 5; ++i) {
+                                Piece *p = currentGame->drawPiece(rand() % 5, rand() % 5);
+                                currentGame->insertPieceInRight(currentGame, p);
+                            }
+                            nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
+                            state = GameState::PLAYING;
+                        } else if (selection == 1) { // RULES
+                            renderer.toggleAbout();
+                        } else if (selection == 2) { // EXIT
+                            window.close();
+                        }
+                    } else if (event.key.code == sf::Keyboard::A) {
+                        renderer.toggleAbout();
                     }
-                    int scoreChange = currentGame->updateGame(currentGame);
-                    if (scoreChange > 0) {
-                        renderer.addPopup("+" + std::to_string(scoreChange), sf::Vector2f(300.0f, 300.0f));
-                        if (assets.hasSoundBuffer("match")) {
-                            sound.setBuffer(assets.getSoundBuffer("match"));
-                            sound.play();
+                } else if (state == GameState::GAME_OVER) {
+                    if (event.key.code == sf::Keyboard::Space) {
+                        state = GameState::MENU;
+                    }
+                } else if (state == GameState::PAUSED) {
+                    if (event.key.code == sf::Keyboard::Escape) {
+                        state = GameState::PLAYING;
+                    }
+                } else if (state == GameState::PLAYING) {
+                    if (event.key.code == sf::Keyboard::A) {
+                        renderer.toggleAbout();
+                        continue;
+                    }
+                    if (event.key.code == sf::Keyboard::Escape) {
+                        state = GameState::PAUSED;
+                        continue;
+                    }
+
+                    if (nextPiece == nullptr && (currentGame == nullptr || currentGame->piecesCount == 0)) continue;
+
+                    sf::Vector2u winSize = window.getSize();
+                    float sidebarWidth = 200.0f;
+                    float startX = 60.0f;
+                    float startY = 60.0f;
+                    float spacingX = 60.0f;
+                    float spacingY = 80.0f;
+                    float boardWidth = static_cast<float>(winSize.x) - sidebarWidth - startX;
+                    int piecesPerRow = static_cast<int>(boardWidth / spacingX);
+                    if (piecesPerRow < 1) piecesPerRow = 1;
+                    int maxRows = static_cast<int>((static_cast<float>(winSize.y) - startY - 25.0f) / spacingY) + 1;
+                    if (maxRows < 1) maxRows = 0;
+                    int dynamicCapacity = piecesPerRow * maxRows;
+
+                    bool actionTaken = false;
+                    bool shifted = false;
+                    if (event.key.code == sf::Keyboard::J) {
+                        if (nextPiece != nullptr) {
+                            if (currentGame->piecesCount < dynamicCapacity) {
+                                if (currentGame->insertPieceInLeft(currentGame, nextPiece)) actionTaken = true;
+                            } else {
+                                state = GameState::GAME_OVER;
+                                userManager.updateRecord(currentGame->score);
+                            }
+                        }
+                    } else if (event.key.code == sf::Keyboard::K) {
+                        if (nextPiece != nullptr) {
+                            if (currentGame->piecesCount < dynamicCapacity) {
+                                if (currentGame->insertPieceInRight(currentGame, nextPiece)) actionTaken = true;
+                            } else {
+                                state = GameState::GAME_OVER;
+                                userManager.updateRecord(currentGame->score);
+                            }
+                        }
+                    } else if (event.key.code == sf::Keyboard::C) {
+                        if (nextPiece != nullptr) {
+                            currentGame->colorShifting(currentGame, nextPiece->color, 0); 
+                            shifted = true;
+                        }
+                    } else if (event.key.code == sf::Keyboard::S) {
+                        if (nextPiece != nullptr) {
+                            currentGame->shapeShifting(currentGame, nextPiece->shape, 0);
+                            shifted = true;
                         }
                     }
                     
-                    if (currentGame->piecesCount == 0) {
-                        std::cout << "You Won!" << std::endl;
-                        renderer.addPopup("YOU WON!", sf::Vector2f(300.0f, 300.0f), sf::Color::Green);
-                        nextPiece = nullptr; // Clear next piece on win
-                    } else {
+                    if (actionTaken && currentGame->piecesCount > 0) {
+                        if (assets.hasSoundBuffer("place")) {
+                            sound.setBuffer(assets.getSoundBuffer("place"));
+                            sound.play();
+                        }
+                        int scoreChange = currentGame->updateGame(currentGame);
+                        if (scoreChange > 0) {
+                            if (assets.hasSoundBuffer("match")) {
+                                sound.setBuffer(assets.getSoundBuffer("match"));
+                                sound.play();
+                            }
+                            renderer.addPopup("+" + std::to_string(scoreChange), sf::Vector2f(window.getSize().x / 2.0f, 100.0f));
+                            userManager.updateRecord(currentGame->score);
+                        }
+                        
+                        if (currentGame->piecesCount == 0) {
+                            renderer.addPopup("BOARD CLEARED!", sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f), sf::Color::Green);
+                        }
                         nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
                     }
-                } else if (shifted && currentGame->piecesCount > 0) {
-                    if (assets.hasSoundBuffer("shift")) {
-                        sound.setBuffer(assets.getSoundBuffer("shift"));
-                        sound.play();
+                    if (shifted) {
+                        if (assets.hasSoundBuffer("shift")) {
+                            sound.setBuffer(assets.getSoundBuffer("shift"));
+                            sound.play();
+                        }
                     }
                 }
             }
         }
 
-        renderer.render(*currentGame, nextPiece);
+        if (state == GameState::PLAYING || state == GameState::PAUSED) {
+            renderer.render(*currentGame, nextPiece, state);
+        } else {
+            static Game dummyGame(0,0);
+            renderer.render(dummyGame, nullptr, state);
+        }
     }
 
-    delete currentGame;
+    if (currentGame) delete currentGame;
+    if (nextPiece) delete nextPiece;
+    
     return 0;
 }

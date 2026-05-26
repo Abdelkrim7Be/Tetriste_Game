@@ -69,17 +69,23 @@ Piece* Game::retrieveTail(Game *game)
     return current;
 }
 
-void Game::insertPieceInRight(Game *game, Piece *newPiece)
+bool Game::insertPieceInRight(Game *game, Piece *newPiece)
 {
-    if (game->piecesCount < 15)
-    {
-        Piece *tail = retrieveTail(game);
+    if (game == nullptr || newPiece == nullptr) return false;
+    
+    Piece *tail = retrieveTail(game);
+    if (tail == nullptr) {
+        // First piece ever (should be handled by initializeGame usually)
+        game->head = newPiece;
+        newPiece->nextPiece = newPiece;
+    } else {
         tail->nextPiece = newPiece;
         newPiece->nextPiece = game->head;
-        game->updateColorAfterAdding(newPiece);
-        game->updateShapeAfterAdding(newPiece);
-        game->piecesCount++;
     }
+    game->updateColorAfterAdding(newPiece);
+    game->updateShapeAfterAdding(newPiece);
+    game->piecesCount++;
+    return true;
 }
 
 Piece** Game::getPieces() {
@@ -93,10 +99,13 @@ Piece** Game::getPieces() {
     return pieces;
 }
 
-void Game::insertPieceInLeft(Game *game, Piece *newPiece)
+bool Game::insertPieceInLeft(Game *game, Piece *newPiece)
 {
-    game->insertPieceInRight(game, newPiece);
-    game->head = newPiece;
+    if (game->insertPieceInRight(game, newPiece)) {
+        game->head = newPiece;
+        return true;
+    }
+    return false;
 }
 
 void Game::updateShapeAfterAdding(Piece* piece) {
@@ -139,7 +148,7 @@ int Game::similarSequenceTracker(Game *game, Piece *newPiece)
     Piece *current = newPiece->nextPiece;
     for (int i = 1; i < game->piecesCount; i++)
     {
-        if (current == game->head) break;
+        if (current == newPiece) break;
         if (colorSequence == i && current->color == newPiece->color)
             colorSequence++;
         if (shapeSequence == i && current->shape == newPiece->shape)
@@ -266,10 +275,10 @@ void Game::colorShifting(Game *game, T_Color color, int) {
 
     if(currentColor != currentColor->colorPrev){
         Piece * current = currentColor;
-        do {
+        while(current->colorNext != currentColor){
             switchingShapes(current);
             current = current->colorNext;
-        } while(current != currentColor);
+        }
 
         Piece *heads[6] = { nullptr };
         Piece *tails[6] = { nullptr };
@@ -310,10 +319,10 @@ void Game::shapeShifting(Game *game, T_Shape shape, int) {
 
     if(currentShape != currentShape->shapePrev){
         Piece * current = currentShape;
-        do {
+        while(current->shapeNext != currentShape){
             switchingColors(current);
             current = current->shapeNext;
-        } while(current != currentShape);
+        }
 
         Piece *heads[6] = { nullptr };
         Piece *tails[6] = { nullptr };

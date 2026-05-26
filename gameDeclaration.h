@@ -24,8 +24,8 @@ public:
     Piece* retrieveTail(Game* game);
     Piece **getPieces();
 
-    void insertPieceInRight(Game *game, Piece *piece);
-    void insertPieceInLeft(Game *game, Piece *piece);
+    bool insertPieceInRight(Game *game, Piece *piece);
+    bool insertPieceInLeft(Game *game, Piece *piece);
     void updateShapeAfterAdding(Piece* piece);
     void updateColorAfterAdding(Piece* piece);
     int similarSequenceTracker(Game* game, Piece *newPiece);
