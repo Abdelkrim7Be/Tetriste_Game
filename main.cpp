@@ -23,6 +23,32 @@ sf::SoundBuffer generateBeep(float frequency, float duration) {
     return buffer;
 }
 
+sf::SoundBuffer generateMusicTrack() {
+    const unsigned int sampleRate = 44100;
+    // A simple 4-note loop (A3, C4, E4, G4) - 2 seconds total
+    float notes[] = {220.0f, 261.63f, 329.63f, 392.00f};
+    const float durationPerNote = 0.5f;
+    const unsigned int totalSamples = static_cast<unsigned int>(sampleRate * durationPerNote * 4);
+    std::vector<sf::Int16> samples(totalSamples);
+
+    for (int n = 0; n < 4; ++n) {
+        unsigned int start = static_cast<unsigned int>(n * sampleRate * durationPerNote);
+        unsigned int end = static_cast<unsigned int>((n + 1) * sampleRate * durationPerNote);
+        for (unsigned int i = start; i < end; ++i) {
+            // Simple sine wave with a basic envelope to reduce clicking
+            float volume = 1.0f;
+            if (i - start < 441) volume = (i - start) / 441.0f; // Fade in
+            if (end - i < 441) volume = (end - i) / 441.0f;     // Fade out
+            
+            samples[i] = static_cast<sf::Int16>(10000 * volume * std::sin(2 * 3.14159f * notes[n] * i / sampleRate));
+        }
+    }
+
+    sf::SoundBuffer buffer;
+    buffer.loadFromSamples(&samples[0], totalSamples, 1, sampleRate);
+    return buffer;
+}
+
 void generatePlaceholderAssets(AssetManager &assets) {
     T_Color colors[] = {T_Color::BLUE, T_Color::YELLOW, T_Color::RED, T_Color::GREEN, T_Color::WHITE};
     T_Shape shapes[] = {T_Shape::SQUARE, T_Shape::DIAMOND, T_Shape::CIRCLE, T_Shape::TRIANGLE, T_Shape::STAR};
@@ -31,6 +57,7 @@ void generatePlaceholderAssets(AssetManager &assets) {
     assets.addSoundBuffer("place", generateBeep(440.0f, 0.1f));   // A4 note
     assets.addSoundBuffer("match", generateBeep(880.0f, 0.2f));   // A5 note
     assets.addSoundBuffer("shift", generateBeep(660.0f, 0.05f));  // E5 note
+    assets.addSoundBuffer("music", generateMusicTrack());         // Background loop
 
     const int size = 50;
     const int padding = 5;
@@ -153,6 +180,15 @@ int main()
 
     Renderer renderer(window, assets);
     sf::Sound sound;
+    
+    // Setup background music
+    sf::Sound music;
+    if (assets.hasSoundBuffer("music")) {
+        music.setBuffer(assets.getSoundBuffer("music"));
+        music.setLoop(true);
+        music.setVolume(50.0f); // Lower volume for background
+        music.play();
+    }
 
     int randomColorIndex = rand() % 5;
     int randomShapeIndex = rand() % 5;
