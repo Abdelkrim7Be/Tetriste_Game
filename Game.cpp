@@ -1,6 +1,7 @@
 #include "gameDeclaration.h"
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 Game::Game(int colorIndex, int shapeIndex)
 {
@@ -16,7 +17,6 @@ Game::~Game()
     std::cout << "DEBUG: Destroying Game, piecesCount=" << piecesCount << std::endl;
     if (head == nullptr) return;
     
-    // Break circularity for easier deletion
     Piece* tail = head;
     int count = 1;
     while (tail->nextPiece != head && count < piecesCount) {
@@ -75,7 +75,6 @@ bool Game::insertPieceInRight(Game *game, Piece *newPiece)
     
     Piece *tail = retrieveTail(game);
     if (tail == nullptr) {
-        // First piece ever (should be handled by initializeGame usually)
         game->head = newPiece;
         newPiece->nextPiece = newPiece;
     } else {
@@ -184,17 +183,15 @@ int Game::updateGame(Game *game)
                 if (game->piecesCount == combinationSize)
                 {
                     std::cout << "DEBUG: Winning state reached, deleting all pieces" << std::endl;
-                    Piece* toDel[20];
+                    std::vector<Piece*> toDel;
                     Piece* p = game->head;
                     for (int i = 0; i < combinationSize; i++) {
-                        toDel[i] = p;
+                        toDel.push_back(p);
                         p = p->nextPiece;
                     }
                     game->piecesCount = 0;
                     game->head = nullptr;
-                    for (int i = 0; i < combinationSize; i++) {
-                        if (toDel[i]) delete toDel[i];
-                    }
+                    for (auto target : toDel) delete target;
                     std::cout << "DEBUG: Winning state cleanup done" << std::endl;
                     return -1;
                 }
@@ -212,22 +209,21 @@ int Game::updateGame(Game *game)
                     beforeCurrent->nextPiece = nextAfterSeq;
                 }
 
-                Piece* piecesToDelete[20];
+                std::vector<Piece*> piecesToDelete;
                 Piece* p = seqStart;
                 for (int i = 0; i < combinationSize; i++) {
-                    piecesToDelete[i] = p;
+                    piecesToDelete.push_back(p);
                     p = p->nextPiece;
                 }
 
-                for (int i = 0; i < combinationSize; i++) {
-                    Piece* target = piecesToDelete[i];
+                for (auto target : piecesToDelete) {
                     target->shapePrev->shapeNext = target->shapeNext;
                     target->shapeNext->shapePrev = target->shapePrev;
                     target->colorPrev->colorNext = target->colorNext;
                     target->colorNext->colorPrev = target->colorPrev;
                 }
 
-                for (int i = 0; i < combinationSize; i++) delete piecesToDelete[i];
+                for (auto target : piecesToDelete) delete target;
                 game->piecesCount -= combinationSize;
 
                 currentPiece = game->head;
