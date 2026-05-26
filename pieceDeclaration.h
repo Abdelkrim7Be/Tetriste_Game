@@ -16,13 +16,9 @@ public:
     Piece* shapeNext;
     Piece* colorPrev;
     Piece* colorNext;
-    string displayString;
 
     Piece(T_Color color, T_Shape shape, Piece* nextPiece, Piece* shapePrev, Piece* shapeNext, Piece* colorPrev, Piece* colorNext);
     ~Piece();
-
-    string displayPiece();
-
 };
 
 #endif // PIECE_H_INCLUDED

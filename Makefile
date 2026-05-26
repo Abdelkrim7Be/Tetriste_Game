@@ -1,13 +1,15 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++11
+LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
+
 TARGET = Tetriste
-SRCS = main.cpp
+SRCS = main.cpp Game.cpp Piece.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
