@@ -2,6 +2,7 @@
 #define ASSETMANAGER_H
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <map>
 #include <string>
 
@@ -17,9 +18,15 @@ public:
     sf::Font &getFont(std::string name);
     bool hasFont(std::string name) const;
 
+    bool loadSoundBuffer(std::string name, std::string filename);
+    void addSoundBuffer(std::string name, const sf::SoundBuffer& buffer);
+    sf::SoundBuffer &getSoundBuffer(std::string name);
+    bool hasSoundBuffer(std::string name) const;
+
 private:
     std::map<std::string, sf::Texture> textures;
     std::map<std::string, sf::Font> fonts;
+    std::map<std::string, sf::SoundBuffer> soundBuffers;
 };
 
 #endif

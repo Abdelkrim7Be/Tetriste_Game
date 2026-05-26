@@ -2,15 +2,36 @@
 #include <iostream>
 #include <ctime>
 #include <vector>
+#include <cmath>
 #include "gameDeclaration.h"
 #include "generalHeader.h"
 #include "AssetManager.h"
 #include "Renderer.h"
+#include <SFML/Audio.hpp>
+
+sf::SoundBuffer generateBeep(float frequency, float duration) {
+    const unsigned int sampleRate = 44100;
+    const unsigned int sampleCount = static_cast<unsigned int>(sampleRate * duration);
+    std::vector<sf::Int16> samples(sampleCount);
+
+    for (unsigned int i = 0; i < sampleCount; ++i) {
+        samples[i] = static_cast<sf::Int16>(30000 * std::sin(2 * 3.14159f * frequency * i / sampleRate));
+    }
+
+    sf::SoundBuffer buffer;
+    buffer.loadFromSamples(&samples[0], sampleCount, 1, sampleRate);
+    return buffer;
+}
 
 void generatePlaceholderAssets(AssetManager &assets) {
     T_Color colors[] = {T_Color::BLUE, T_Color::YELLOW, T_Color::RED, T_Color::GREEN, T_Color::WHITE};
     T_Shape shapes[] = {T_Shape::SQUARE, T_Shape::DIAMOND, T_Shape::CIRCLE, T_Shape::TRIANGLE, T_Shape::STAR};
     
+    // Generate sound effects
+    assets.addSoundBuffer("place", generateBeep(440.0f, 0.1f));   // A4 note
+    assets.addSoundBuffer("match", generateBeep(880.0f, 0.2f));   // A5 note
+    assets.addSoundBuffer("shift", generateBeep(660.0f, 0.05f));  // E5 note
+
     const int size = 50;
     const int padding = 5;
 
@@ -131,6 +152,7 @@ int main()
     }
 
     Renderer renderer(window, assets);
+    sf::Sound sound;
 
     int randomColorIndex = rand() % 5;
     int randomShapeIndex = rand() % 5;
@@ -155,6 +177,7 @@ int main()
             
             if (event.type == sf::Event::KeyPressed) {
                 bool actionTaken = false;
+                bool shifted = false;
                 if (event.key.code == sf::Keyboard::J) {
                     currentGame->insertPieceInLeft(currentGame, nextPiece);
                     actionTaken = true;
@@ -162,21 +185,35 @@ int main()
                     currentGame->insertPieceInRight(currentGame, nextPiece);
                     actionTaken = true;
                 } else if (event.key.code == sf::Keyboard::C) {
-                    // Simplification: rotate to next color for now or show a menu
                     currentGame->colorShifting(currentGame, T_Color::RED, 0); 
+                    shifted = true;
                 } else if (event.key.code == sf::Keyboard::S) {
                     currentGame->shapeShifting(currentGame, T_Shape::SQUARE, 0);
+                    shifted = true;
                 }
                 
                 if (actionTaken) {
+                    if (assets.hasSoundBuffer("place")) {
+                        sound.setBuffer(assets.getSoundBuffer("place"));
+                        sound.play();
+                    }
                     int scoreChange = currentGame->updateGame(currentGame);
                     if (scoreChange > 0) {
                         renderer.addPopup("+" + std::to_string(scoreChange), sf::Vector2f(300.0f, 300.0f));
+                        if (assets.hasSoundBuffer("match")) {
+                            sound.setBuffer(assets.getSoundBuffer("match"));
+                            sound.play();
+                        }
                     }
                     nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
                     if (currentGame->piecesCount == 0) {
                         std::cout << "You Won!" << std::endl;
                         renderer.addPopup("YOU WON!", sf::Vector2f(300.0f, 300.0f), sf::Color::Green);
+                    }
+                } else if (shifted) {
+                    if (assets.hasSoundBuffer("shift")) {
+                        sound.setBuffer(assets.getSoundBuffer("shift"));
+                        sound.play();
                     }
                 }
             }

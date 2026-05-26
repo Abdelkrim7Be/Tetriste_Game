@@ -36,3 +36,25 @@ sf::Font &AssetManager::getFont(std::string name) {
 bool AssetManager::hasFont(std::string name) const {
     return fonts.find(name) != fonts.end();
 }
+
+bool AssetManager::loadSoundBuffer(std::string name, std::string filename) {
+    sf::SoundBuffer buffer;
+    if (buffer.loadFromFile(filename)) {
+        this->soundBuffers[name] = buffer;
+        return true;
+    }
+    std::cerr << "Error: Failed to load sound buffer '" << filename << "'" << std::endl;
+    return false;
+}
+
+void AssetManager::addSoundBuffer(std::string name, const sf::SoundBuffer& buffer) {
+    this->soundBuffers[name] = buffer;
+}
+
+sf::SoundBuffer &AssetManager::getSoundBuffer(std::string name) {
+    return this->soundBuffers.at(name);
+}
+
+bool AssetManager::hasSoundBuffer(std::string name) const {
+    return soundBuffers.find(name) != soundBuffers.end();
+}
