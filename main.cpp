@@ -1,290 +1,157 @@
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include <SFML/Graphics.hpp>
 #include <iostream>
 #include <ctime>
+#include <vector>
+#include "gameDeclaration.h"
 #include "generalHeader.h"
+#include "AssetManager.h"
+#include "Renderer.h"
 
-using namespace std;
-
-void displayMenu()
-{
-  cout << "\t\t\t             ____________________________________________\n";
-  cout << "\t\t\t            |                |                             |\n";
-  cout << "\t\t\t            |       *******       *******                  |\n";
-  cout << "\t\t\t            |       * T * E * T * R * I * S * T * E *       \n";
-  cout << "\t\t\t            |        Menu Options:                         |\n"; // Clearer label
-  cout << "\t\t\t            |           j) Insert Left                     |\n";
-  cout << "\t\t\t            |           k) Insert Right                    |\n";  // Consistent formatting
-  cout << "\t\t\t            |           c) Shift by Color                  |\n";
-  cout << "\t\t\t            |           s) Shift by Shape                  |\n";  // Option "s" changed to "4"
-  cout << "\t\t\t            |           q) Quit                            |\n";  // Added "5" and rephrased
-  cout << "\t\t\t            |______________________________________________|\n\n\n\n\n";
-}
-
-//T_Color displayColorMenu(int purple, int white) {
-T_Color displayColorMenu() {
-    cout << "Which color do you want to shift?" << endl;
-    cout << "b. Blue" << endl;
-    cout << "y. Yellow" << endl;
-    cout << "r. Red" << endl;
-    cout << "g. Green" << endl;
-    //if (purple) {
-        cout << "p. Purple" << endl;
-   // }
-    //if (white) {
-        cout << "w. White" << endl;
-    //}
-    cout << "0. Back" << endl;
-
-    char colorChoice;
-    cout << "Your choice: ";
-    cin >> colorChoice;
-    cout << endl;
-
-    T_Color chosenColor;
-
-    // Convert the character choice to T_Color
-    switch (colorChoice) {
-        case 'b':
-            chosenColor = T_Color::BLUE;
-            break;
-        case 'y':
-            chosenColor = T_Color::YELLOW;
-            break;
-        case 'r':
-            chosenColor = T_Color::RED;
-            break;
-        case 'g':
-            chosenColor = T_Color::GREEN;
-            break;
-        case 'w':
-            chosenColor = T_Color::WHITE;
-            break;
-        default:
-            // Handle invalid choice
-            cout << "Invalid color choice." << endl;
-            // You might want to ask the user to choose again or handle the error differently
-            break;
-    }
-
-    return chosenColor;
-}
-
-
-//T_Shape displayShapeMenu(int star, int plus) {
-T_Shape displayShapeMenu() {
-    cout << "Which shape do you want to shift?" << endl;
-    cout << "s. Square" << endl;
-    cout << "d. Diamond" << endl;
-    cout << "c. Circle" << endl;
-    cout << "t. Triangle" << endl;
-    //if (star) {
-        cout << "a. Star" << endl;
-   // }
-    //if (plus) {
-        cout << "p. Plus" << endl;
-    //}
-    cout << "0. Back" << endl;
-
-    char shapeChoice;
-    cout << "Your choice: ";
-    cin >> shapeChoice;
-    cout << endl;
-
-    T_Shape chosenShape;
-
-    // Convert the character choice to T_Shape
-    switch (shapeChoice) {
-        case 's':
-            chosenShape = T_Shape::SQUARE;
-            break;
-        case 'd':
-            chosenShape = T_Shape::DIAMOND;
-            break;
-        case 'c':
-            chosenShape = T_Shape::CIRCLE;
-            break;
-        case 't':
-            chosenShape = T_Shape::TRIANGLE;
-            break;
-        case 'a':
-            chosenShape = T_Shape::STAR;
-            break;
-        default:
-            // Handle invalid choice
-            cout << "Invalid shape choice." << endl;
-            // You might want to ask the user to choose again or handle the error differently
-            break;
-    }
-
-    return chosenShape;
-}
-
-
-void displayGamePieces(Piece **pieces, int numPieces)
-{
-    for (int i = 0; i < numPieces; ++i)
-    {
-        cout << "Piece " << i + 1 << ": " << pieces[i]->displayPiece() << " ";
-    }
-    cout << endl;
-}
-
-void countOfColorsAndShapes(Game* game, int &countOfColors, int &countOfShapes) {
-    countOfColors = 0;
-    countOfShapes = 0;
-
-    bool colorsCounted[6] = {false}; // 6 est le nombre total de couleurs possibles
-    bool shapesCounted[6] = {false}; // 6 est le nombre total de formes possibles
-
-    // Parcourir la liste de pi�ces du jeu
-    Piece *currentPiece = game->head;
-    do {
-        // V�rifier si la couleur de la pi�ce a d�j� �t� compt�e
-        if (!colorsCounted[static_cast<int>(currentPiece->color)]) {
-            colorsCounted[static_cast<int>(currentPiece->color)] = true;
-            countOfColors++; // Incr�menter le nombre de couleurs
+void generatePlaceholderAssets(AssetManager &assets) {
+    // Generate simple sprites for each combination if they don't exist
+    // For this demo, we'll just use colored rectangles as sprites
+    T_Color colors[] = {T_Color::BLUE, T_Color::YELLOW, T_Color::RED, T_Color::GREEN, T_Color::WHITE};
+    T_Shape shapes[] = {T_Shape::SQUARE, T_Shape::DIAMOND, T_Shape::CIRCLE, T_Shape::TRIANGLE, T_Shape::STAR};
+    
+    for (auto c : colors) {
+        for (auto s : shapes) {
+            sf::RenderTexture rt;
+            rt.create(50, 50);
+            rt.clear(sf::Color::Transparent);
+            
+            sf::Color color;
+            switch(c) {
+                case T_Color::BLUE: color = sf::Color::Blue; break;
+                case T_Color::YELLOW: color = sf::Color::Yellow; break;
+                case T_Color::RED: color = sf::Color::Red; break;
+                case T_Color::GREEN: color = sf::Color::Green; break;
+                case T_Color::WHITE: color = sf::Color::White; break;
+            }
+            
+            sf::RectangleShape shape(sf::Vector2f(40, 40));
+            shape.setFillColor(color);
+            shape.setOutlineThickness(2);
+            shape.setOutlineColor(sf::Color::White);
+            shape.setPosition(5, 5);
+            
+            rt.draw(shape);
+            rt.display();
+            
+            std::string name;
+            switch(c) {
+                case T_Color::BLUE: name = "blue"; break;
+                case T_Color::YELLOW: name = "yellow"; break;
+                case T_Color::RED: name = "red"; break;
+                case T_Color::GREEN: name = "green"; break;
+                case T_Color::WHITE: name = "white"; break;
+            }
+            std::string sname;
+            switch(s) {
+                case T_Shape::SQUARE: sname = "square"; break;
+                case T_Shape::DIAMOND: sname = "diamond"; break;
+                case T_Shape::CIRCLE: sname = "circle"; break;
+                case T_Shape::TRIANGLE: sname = "triangle"; break;
+                case T_Shape::STAR: sname = "star"; break;
+            }
+            
+            sf::Image img = rt.getTexture().copyToImage();
+            std::string filename = "assets/" + name + "_" + sname + ".png";
+            img.saveToFile(filename);
+            assets.loadTexture(name + "_" + sname, filename);
         }
-
-        // V�rifier si la forme de la pi�ce a d�j� �t� compt�e
-        if (!shapesCounted[static_cast<int>(currentPiece->shape)]) {
-            shapesCounted[static_cast<int>(currentPiece->shape)] = true;
-            countOfShapes++; // Incr�menter le nombre de formes
-        }
-
-        // Passer � la pi�ce suivante
-        currentPiece = currentPiece->nextPiece;
-    } while (currentPiece != game->head);
+    }
 }
-
-
 
 int main()
 {
-#ifdef _WIN32
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hConsole != INVALID_HANDLE_VALUE) {
-       DWORD mode = 0;
-       if (GetConsoleMode(hConsole, &mode)) {
-          mode |=0x0004;
-          SetConsoleMode(hConsole, mode);
-       }
-    }
-#endif
-    // Seed the random number generator
     srand(static_cast<unsigned int>(time(nullptr)));
 
-    // Generate random color and shape indices
-    int randomColorIndex = rand() % static_cast<int>(T_Color::WHITE);
-    int randomShapeIndex = rand() % static_cast<int>(T_Shape::STAR);
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Tetriste Graphical");
+    window.setFramerateLimit(60);
 
-    // Use the random indices to initialize the game
-    Game *currentGame = initializeGame(randomColorIndex, randomShapeIndex);
+    AssetManager assets;
+    
+    // Ensure assets directory exists
+    #ifdef _WIN32
+        system("if not exist assets mkdir assets");
+    #else
+        system("mkdir -p assets");
+    #endif
 
-    int continueGame = 1;
+    generatePlaceholderAssets(assets);
+    
+    // Font discovery
+    std::vector<std::string> fontPaths = {
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",
+        "C:\\Windows\\Fonts\\arial.ttf",
+        "assets/font.ttf" // Local fallback
+    };
 
-    int colorCounter = 0, shapeCounter = 0;
-    int scoreChange = currentGame->score;
+    bool fontLoaded = false;
+    for (const auto& path : fontPaths) {
+        if (assets.loadFont("main", path)) {
+            fontLoaded = true;
+            break;
+        }
+    }
 
-    // Generate and insert the initial five pieces into the game
-    for (int i = 0; i < 5; ++i)
-    {
-        randomColorIndex = rand() % static_cast<int>(T_Color::WHITE);
-        randomShapeIndex = rand() % static_cast<int>(T_Shape::STAR);
-        Piece *newPiece = currentGame->drawPiece(randomColorIndex, randomShapeIndex);
+    if (!fontLoaded) {
+        std::cerr << "Warning: Could not load any system fonts. UI text may not display." << std::endl;
+    }
+
+    Renderer renderer(window, assets);
+
+    int randomColorIndex = rand() % 5;
+    int randomShapeIndex = rand() % 5;
+    
+    // In this implementation, initializeGame creates a new Game object on the heap
+    Game *currentGame = Game(0,0).initializeGame(randomColorIndex, randomShapeIndex);
+
+    for (int i = 0; i < 5; ++i) {
+        Piece *newPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
         currentGame->insertPieceInRight(currentGame, newPiece);
     }
 
-    while (continueGame)
+    Piece *nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
+
+    while (window.isOpen())
     {
-        cout << "Score : " << scoreChange << endl;
-        cout << "\n\n\n";
-
-        randomColorIndex = rand() % static_cast<int>(T_Color::WHITE);
-        randomShapeIndex = rand() % static_cast<int>(T_Shape::STAR);
-
-        Piece * nextPiece = currentGame->drawPiece(randomColorIndex, randomShapeIndex);
-
-
-        // Display menu and get player input
-        displayMenu();
-        // Display current game state
-        cout << "Current game state: ";
-        currentGame->updateGame(currentGame);
-        if (currentGame->piecesCount > 0) {
-            Piece** pieces = currentGame->getPieces();
-            displayGamePieces(pieces, currentGame->piecesCount);
-            delete[] pieces;
-        } else {
-            cout << "(empty)" << endl;
-        }
-
-        // Display next piece
-        cout << "Next piece: " << nextPiece->displayPiece() << endl;
-        char choice;
-        cout << "Your choice: ";
-        cin >> choice;
-        cout << endl;
-        T_Color chosenColor;
-        T_Shape chosenShape;
-
-        countOfColorsAndShapes(currentGame, colorCounter, shapeCounter);
-
-        bool inserted = false;
-        switch (choice)
+        sf::Event event;
+        while (window.pollEvent(event))
         {
-        case 'j':
-            currentGame->insertPieceInLeft(currentGame, nextPiece);
-            inserted = true;
-            break;
-        case 'k':
-            currentGame->insertPieceInRight(currentGame, nextPiece);
-            inserted = true;
-            break;
-        case 'c':
-            //chosenColor = displayColorMenu(currentGame->colorIndex > 4, currentGame->colorIndex == 6);
-            chosenColor = displayColorMenu();
-            currentGame->colorShifting(currentGame, chosenColor, shapeCounter);
-            break;
-        case 's':
-            //chosenShape = displayShapeMenu(currentGame->shapeIndex > 4, currentGame->shapeIndex == 6);
-            chosenShape = displayShapeMenu();
-            currentGame->shapeShifting(currentGame, chosenShape, colorCounter);
-            break;
-        case 'q':
-            // Quit the game
-            continueGame = 0;
-            break;
-        default:
-            // Invalid choice
-            cout << "Invalid choice. Please try again." << endl;
-            break;
+            if (event.type == sf::Event::Closed)
+                window.close();
+            
+            if (event.type == sf::Event::KeyPressed) {
+                bool actionTaken = false;
+                if (event.key.code == sf::Keyboard::J) {
+                    currentGame->insertPieceInLeft(currentGame, nextPiece);
+                    actionTaken = true;
+                } else if (event.key.code == sf::Keyboard::K) {
+                    currentGame->insertPieceInRight(currentGame, nextPiece);
+                    actionTaken = true;
+                } else if (event.key.code == sf::Keyboard::C) {
+                    // Simplification: rotate to next color for now or show a menu
+                    currentGame->colorShifting(currentGame, T_Color::RED, 0); 
+                } else if (event.key.code == sf::Keyboard::S) {
+                    currentGame->shapeShifting(currentGame, T_Shape::SQUARE, 0);
+                }
+                
+                if (actionTaken) {
+                    currentGame->updateGame(currentGame);
+                    nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
+                    if (currentGame->piecesCount == 0) {
+                        std::cout << "You Won!" << std::endl;
+                    }
+                }
+            }
         }
 
-        if (!inserted) {
-            delete nextPiece;
-        }
-
-        //cout << currentGame->piecesCount <<endl;
-
-
-        // Update game state
-        scoreChange = currentGame->updateGame(currentGame);
-
-
-        // Check if the game is over
-        if (scoreChange == -1)
-        {
-            cout << "Congratulations! You've won!" << endl;
-            continueGame = 0;
-        }
-
-        // Debugging: Print score change
-        //cout << "Score change: " << scoreChange << endl;
+        renderer.render(*currentGame, nextPiece);
     }
 
     delete currentGame;
-
     return 0;
 }

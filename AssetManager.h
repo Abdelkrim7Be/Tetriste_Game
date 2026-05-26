@@ -9,11 +9,13 @@ class AssetManager {
 public:
     AssetManager() {}
     
-    void loadTexture(std::string name, std::string filename);
+    bool loadTexture(std::string name, std::string filename);
     sf::Texture &getTexture(std::string name);
+    bool hasTexture(std::string name) const;
     
-    void loadFont(std::string name, std::string filename);
+    bool loadFont(std::string name, std::string filename);
     sf::Font &getFont(std::string name);
+    bool hasFont(std::string name) const;
 
 private:
     std::map<std::string, sf::Texture> textures;

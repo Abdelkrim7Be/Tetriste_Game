@@ -24,16 +24,20 @@ void Renderer::render(Game &game, Piece *nextPiece) {
     
     // Draw next piece preview
     if (nextPiece != nullptr) {
-        sf::Text nextLabel("Next:", assets.getFont("main"), 20);
-        nextLabel.setPosition(600.0f, 50.0f);
-        window.draw(nextLabel);
+        if (assets.hasFont("main")) {
+            sf::Text nextLabel("Next:", assets.getFont("main"), 20);
+            nextLabel.setPosition(600.0f, 50.0f);
+            window.draw(nextLabel);
+        }
         drawPiece(*nextPiece, 600.0f, 80.0f);
     }
     
     // Draw score
-    sf::Text scoreText("Score: " + std::to_string(game.score), assets.getFont("main"), 24);
-    scoreText.setPosition(20.0f, 20.0f);
-    window.draw(scoreText);
+    if (assets.hasFont("main")) {
+        sf::Text scoreText("Score: " + std::to_string(game.score), assets.getFont("main"), 24);
+        scoreText.setPosition(20.0f, 20.0f);
+        window.draw(scoreText);
+    }
     
     window.display();
 }
