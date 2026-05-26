@@ -178,6 +178,10 @@ int main()
         }
     }
 
+    if (!fontLoaded) {
+        std::cerr << "Warning: No system fonts found. UI text may not render correctly." << std::endl;
+    }
+
     Renderer renderer(window, assets, userManager);
     sf::Sound sound;
     
