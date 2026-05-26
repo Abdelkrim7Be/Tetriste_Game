@@ -8,33 +8,62 @@
 #include "Renderer.h"
 
 void generatePlaceholderAssets(AssetManager &assets) {
-    // Generate simple sprites for each combination if they don't exist
-    // For this demo, we'll just use colored rectangles as sprites
     T_Color colors[] = {T_Color::BLUE, T_Color::YELLOW, T_Color::RED, T_Color::GREEN, T_Color::WHITE};
     T_Shape shapes[] = {T_Shape::SQUARE, T_Shape::DIAMOND, T_Shape::CIRCLE, T_Shape::TRIANGLE, T_Shape::STAR};
     
+    const int size = 50;
+    const int padding = 5;
+
     for (auto c : colors) {
         for (auto s : shapes) {
             sf::RenderTexture rt;
-            rt.create(50, 50);
+            rt.create(size, size);
             rt.clear(sf::Color::Transparent);
             
             sf::Color color;
             switch(c) {
-                case T_Color::BLUE: color = sf::Color::Blue; break;
-                case T_Color::YELLOW: color = sf::Color::Yellow; break;
-                case T_Color::RED: color = sf::Color::Red; break;
-                case T_Color::GREEN: color = sf::Color::Green; break;
-                case T_Color::WHITE: color = sf::Color::White; break;
+                case T_Color::BLUE: color = sf::Color(52, 152, 219); break;
+                case T_Color::YELLOW: color = sf::Color(241, 196, 15); break;
+                case T_Color::RED: color = sf::Color(231, 76, 60); break;
+                case T_Color::GREEN: color = sf::Color(46, 204, 113); break;
+                case T_Color::WHITE: color = sf::Color(236, 240, 241); break;
             }
             
-            sf::RectangleShape shape(sf::Vector2f(40, 40));
-            shape.setFillColor(color);
-            shape.setOutlineThickness(2);
-            shape.setOutlineColor(sf::Color::White);
-            shape.setPosition(5, 5);
+            sf::Shape* shapeObj = nullptr;
             
-            rt.draw(shape);
+            if (s == T_Shape::SQUARE) {
+                sf::RectangleShape* rect = new sf::RectangleShape(sf::Vector2f(size - 2*padding, size - 2*padding));
+                shapeObj = rect;
+            } else if (s == T_Shape::CIRCLE) {
+                sf::CircleShape* circle = new sf::CircleShape((size - 2*padding) / 2.0f);
+                shapeObj = circle;
+            } else if (s == T_Shape::TRIANGLE) {
+                sf::CircleShape* tri = new sf::CircleShape((size - 2*padding) / 2.0f, 3);
+                shapeObj = tri;
+            } else if (s == T_Shape::DIAMOND) {
+                sf::CircleShape* diamond = new sf::CircleShape((size - 2*padding) / 2.0f, 4);
+                diamond->setRotation(45);
+                // Adjust position due to rotation
+                diamond->setOrigin((size - 2*padding) / 2.0f, (size - 2*padding) / 2.0f);
+                diamond->setPosition(size/2.0f, size/2.0f);
+                shapeObj = diamond;
+            } else if (s == T_Shape::STAR) {
+                // Approximate star with 5-sided circle for now, or use a vertex array
+                sf::CircleShape* star = new sf::CircleShape((size - 2*padding) / 2.0f, 5);
+                shapeObj = star;
+            }
+
+            if (shapeObj) {
+                shapeObj->setFillColor(color);
+                shapeObj->setOutlineThickness(2);
+                shapeObj->setOutlineColor(sf::Color(255, 255, 255, 150));
+                if (s != T_Shape::DIAMOND) {
+                    shapeObj->setPosition(padding, padding);
+                }
+                rt.draw(*shapeObj);
+                delete shapeObj;
+            }
+            
             rt.display();
             
             std::string name;
