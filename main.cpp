@@ -103,11 +103,7 @@ void generatePlaceholderAssets(AssetManager& assets) {
     }
 }
 
-int main()
-{
-    srand(static_cast<unsigned int>(time(nullptr)));
-
-    UserManager userManager;
+void processLogin(UserManager& userManager) {
     std::string pseudo, password;
     bool loggedIn = false;
 
@@ -126,7 +122,7 @@ int main()
             continue;
         }
 
-        if (choice == 3) return 0;
+        if (choice == 3) exit(0);
 
         std::cout << "Pseudo: ";
         std::cin >> pseudo;
@@ -148,8 +144,130 @@ int main()
             }
         }
     }
+}
+
+void initializeNewGame(Game*& currentGame, Piece*& nextPiece) {
+    if (currentGame) delete currentGame;
+    if (nextPiece) delete nextPiece;
+    currentGame = Game(0,0).initializeGame(rand() % 5, rand() % 5);
+    for (int i = 0; i < 5; ++i) {
+        Piece *p = currentGame->drawPiece(rand() % 5, rand() % 5);
+        currentGame->insertPieceInRight(currentGame, p);
+    }
+    nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
+}
+
+void handlePlayingInput(sf::Event& event, sf::RenderWindow& window, GameState& state, Game* currentGame, Piece*& nextPiece, Renderer& renderer, AssetManager& assets, UserManager& userManager, sf::Sound& sound, sf::Sound& music) {
+    if (event.key.code == sf::Keyboard::A) {
+        renderer.toggleAbout();
+        return;
+    }
+    if (event.key.code == sf::Keyboard::Escape) {
+        state = GameState::PAUSED;
+        return;
+    }
+
+    if (event.key.code == sf::Keyboard::Add || event.key.code == sf::Keyboard::Equal) {
+        float v = std::min(100.0f, assets.getVolume() + 5.0f);
+        assets.setVolume(v);
+        music.setVolume(v);
+        renderer.addPopup("Volume: " + std::to_string((int)v), sf::Vector2f(window.getSize().x - 100.0f, 30.0f));
+    } else if (event.key.code == sf::Keyboard::Subtract || event.key.code == sf::Keyboard::Dash) {
+        float v = std::max(0.0f, assets.getVolume() - 5.0f);
+        assets.setVolume(v);
+        music.setVolume(v);
+        renderer.addPopup("Volume: " + std::to_string((int)v), sf::Vector2f(window.getSize().x - 100.0f, 30.0f));
+    }
+
+    if (nextPiece == nullptr && (currentGame == nullptr || currentGame->piecesCount == 0)) return;
+
+    sf::Vector2u winSize = window.getSize();
+    float sidebarWidth = 200.0f;
+    float startX = 60.0f;
+    float startY = 60.0f;
+    float spacingX = 60.0f;
+    float spacingY = 80.0f;
+    float boardWidth = static_cast<float>(winSize.x) - sidebarWidth - startX;
+    int piecesPerRow = static_cast<int>(boardWidth / spacingX);
+    if (piecesPerRow < 1) piecesPerRow = 1;
+    int maxRows = static_cast<int>((static_cast<float>(winSize.y) - startY - 25.0f) / spacingY) + 1;
+    if (maxRows < 1) maxRows = 0;
+    int dynamicCapacity = piecesPerRow * maxRows;
+
+    bool actionTaken = false;
+    bool shifted = false;
+    if (event.key.code == sf::Keyboard::J) {
+        if (nextPiece != nullptr) {
+            if (currentGame->piecesCount < dynamicCapacity) {
+                if (currentGame->insertPieceInLeft(currentGame, nextPiece)) actionTaken = true;
+            } else {
+                state = GameState::GAME_OVER;
+                userManager.updateRecord(currentGame->score);
+            }
+        }
+    } else if (event.key.code == sf::Keyboard::K) {
+        if (nextPiece != nullptr) {
+            if (currentGame->piecesCount < dynamicCapacity) {
+                if (currentGame->insertPieceInRight(currentGame, nextPiece)) actionTaken = true;
+            } else {
+                state = GameState::GAME_OVER;
+                userManager.updateRecord(currentGame->score);
+            }
+        }
+    } else if (event.key.code == sf::Keyboard::C) {
+        if (nextPiece != nullptr) {
+            currentGame->colorShifting(currentGame, nextPiece->color, 0); 
+            shifted = true;
+        }
+    } else if (event.key.code == sf::Keyboard::S) {
+        if (nextPiece != nullptr) {
+            currentGame->shapeShifting(currentGame, nextPiece->shape, 0);
+            shifted = true;
+        }
+    }
+    
+    if (actionTaken && currentGame->piecesCount > 0) {
+        if (assets.hasSoundBuffer("place")) {
+            sound.setBuffer(assets.getSoundBuffer("place"));
+            sound.setVolume(assets.getVolume());
+            sound.play();
+        }
+        int scoreChange = currentGame->updateGame(currentGame);
+        if (scoreChange > 0) {
+            if (assets.hasSoundBuffer("match")) {
+                sound.setBuffer(assets.getSoundBuffer("match"));
+                sound.setVolume(assets.getVolume());
+                sound.play();
+            }
+            renderer.addPopup("+" + std::to_string(scoreChange), sf::Vector2f(window.getSize().x / 2.0f, 100.0f));
+            userManager.updateRecord(currentGame->score);
+        }
+
+        if (currentGame->piecesCount == 0) {
+            renderer.addPopup("BOARD CLEARED!", sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f), sf::Color::Green);
+        }
+        nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
+    }
+    if (shifted) {
+        if (assets.hasSoundBuffer("shift")) {
+            sound.setBuffer(assets.getSoundBuffer("shift"));
+            sound.setVolume(assets.getVolume());
+            sound.play();
+        }
+    }
+}
+
+int main()
+{
+
+
+    srand(static_cast<unsigned int>(time(nullptr)));
+
+    UserManager userManager;
+    processLogin(userManager);
 
     sf::RenderWindow window(sf::VideoMode(800, 600), "Tetriste Graphical", sf::Style::Default);
+
     window.setFramerateLimit(60);
 
     AssetManager assets;
@@ -225,14 +343,7 @@ int main()
                     } else if (event.key.code == sf::Keyboard::Enter) {
                         int selection = renderer.getMenuSelection();
                         if (selection == 0) { // PLAY
-                            if (currentGame) delete currentGame;
-                            if (nextPiece) delete nextPiece;
-                            currentGame = Game(0,0).initializeGame(rand() % 5, rand() % 5);
-                            for (int i = 0; i < 5; ++i) {
-                                Piece *p = currentGame->drawPiece(rand() % 5, rand() % 5);
-                                currentGame->insertPieceInRight(currentGame, p);
-                            }
-                            nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
+                            initializeNewGame(currentGame, nextPiece);
                             state = GameState::PLAYING;
                         } else if (selection == 1) { // RULES
                             renderer.toggleAbout();
@@ -251,103 +362,8 @@ int main()
                         state = GameState::PLAYING;
                     }
                 } else if (state == GameState::PLAYING) {
-                    if (event.key.code == sf::Keyboard::A) {
-                        renderer.toggleAbout();
-                        continue;
-                    }
-                    if (event.key.code == sf::Keyboard::Escape) {
-                        state = GameState::PAUSED;
-                        continue;
-                    }
-
-                    if (event.key.code == sf::Keyboard::Add || event.key.code == sf::Keyboard::Equal) {
-                        float v = std::min(100.0f, assets.getVolume() + 5.0f);
-                        assets.setVolume(v);
-                        music.setVolume(v);
-                        renderer.addPopup("Volume: " + std::to_string((int)v), sf::Vector2f(window.getSize().x - 100.0f, 30.0f));
-                    } else if (event.key.code == sf::Keyboard::Subtract || event.key.code == sf::Keyboard::Dash) {
-                        float v = std::max(0.0f, assets.getVolume() - 5.0f);
-                        assets.setVolume(v);
-                        music.setVolume(v);
-                        renderer.addPopup("Volume: " + std::to_string((int)v), sf::Vector2f(window.getSize().x - 100.0f, 30.0f));
-                    }
-
-                    if (nextPiece == nullptr && (currentGame == nullptr || currentGame->piecesCount == 0)) continue;
-
-                    sf::Vector2u winSize = window.getSize();
-                    float sidebarWidth = 200.0f;
-                    float startX = 60.0f;
-                    float startY = 60.0f;
-                    float spacingX = 60.0f;
-                    float spacingY = 80.0f;
-                    float boardWidth = static_cast<float>(winSize.x) - sidebarWidth - startX;
-                    int piecesPerRow = static_cast<int>(boardWidth / spacingX);
-                    if (piecesPerRow < 1) piecesPerRow = 1;
-                    int maxRows = static_cast<int>((static_cast<float>(winSize.y) - startY - 25.0f) / spacingY) + 1;
-                    if (maxRows < 1) maxRows = 0;
-                    int dynamicCapacity = piecesPerRow * maxRows;
-
-                    bool actionTaken = false;
-                    bool shifted = false;
-                    if (event.key.code == sf::Keyboard::J) {
-                        if (nextPiece != nullptr) {
-                            if (currentGame->piecesCount < dynamicCapacity) {
-                                if (currentGame->insertPieceInLeft(currentGame, nextPiece)) actionTaken = true;
-                            } else {
-                                state = GameState::GAME_OVER;
-                                userManager.updateRecord(currentGame->score);
-                            }
-                        }
-                    } else if (event.key.code == sf::Keyboard::K) {
-                        if (nextPiece != nullptr) {
-                            if (currentGame->piecesCount < dynamicCapacity) {
-                                if (currentGame->insertPieceInRight(currentGame, nextPiece)) actionTaken = true;
-                            } else {
-                                state = GameState::GAME_OVER;
-                                userManager.updateRecord(currentGame->score);
-                            }
-                        }
-                    } else if (event.key.code == sf::Keyboard::C) {
-                        if (nextPiece != nullptr) {
-                            currentGame->colorShifting(currentGame, nextPiece->color, 0); 
-                            shifted = true;
-                        }
-                    } else if (event.key.code == sf::Keyboard::S) {
-                        if (nextPiece != nullptr) {
-                            currentGame->shapeShifting(currentGame, nextPiece->shape, 0);
-                            shifted = true;
-                        }
-                    }
-                    
-                    if (actionTaken && currentGame->piecesCount > 0) {
-                        if (assets.hasSoundBuffer("place")) {
-                            sound.setBuffer(assets.getSoundBuffer("place"));
-                            sound.setVolume(assets.getVolume());
-                            sound.play();
-                        }
-                        int scoreChange = currentGame->updateGame(currentGame);
-                        if (scoreChange > 0) {
-                            if (assets.hasSoundBuffer("match")) {
-                                sound.setBuffer(assets.getSoundBuffer("match"));
-                                sound.setVolume(assets.getVolume());
-                                sound.play();
-                            }
-                            renderer.addPopup("+" + std::to_string(scoreChange), sf::Vector2f(window.getSize().x / 2.0f, 100.0f));
-                            userManager.updateRecord(currentGame->score);
-                        }
-
-                        if (currentGame->piecesCount == 0) {
-                            renderer.addPopup("BOARD CLEARED!", sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f), sf::Color::Green);
-                        }
-                        nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
-                        }
-                        if (shifted) {
-                        if (assets.hasSoundBuffer("shift")) {
-                            sound.setBuffer(assets.getSoundBuffer("shift"));
-                            sound.setVolume(assets.getVolume());
-                            sound.play();
-                        }
-                        }                }
+                    handlePlayingInput(event, window, state, currentGame, nextPiece, renderer, assets, userManager, sound, music);
+                }
             }
         }
 
