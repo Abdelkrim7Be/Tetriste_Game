@@ -1,4 +1,6 @@
+#ifdef _WIN32
 #include <windows.h>
+#endif
 #include <iostream>
 #include <ctime>
 #include "generalHeader.h"
@@ -136,30 +138,31 @@ void countOfColorsAndShapes(Game* game, int &countOfColors, int &countOfShapes) 
     bool colorsCounted[6] = {false}; // 6 est le nombre total de couleurs possibles
     bool shapesCounted[6] = {false}; // 6 est le nombre total de formes possibles
 
-    // Parcourir la liste de pièces du jeu
+    // Parcourir la liste de piï¿½ces du jeu
     Piece *currentPiece = game->head;
     do {
-        // Vérifier si la couleur de la pièce a déjà été comptée
+        // Vï¿½rifier si la couleur de la piï¿½ce a dï¿½jï¿½ ï¿½tï¿½ comptï¿½e
         if (!colorsCounted[static_cast<int>(currentPiece->color)]) {
             colorsCounted[static_cast<int>(currentPiece->color)] = true;
-            countOfColors++; // Incrémenter le nombre de couleurs
+            countOfColors++; // Incrï¿½menter le nombre de couleurs
         }
 
-        // Vérifier si la forme de la pièce a déjà été comptée
+        // Vï¿½rifier si la forme de la piï¿½ce a dï¿½jï¿½ ï¿½tï¿½ comptï¿½e
         if (!shapesCounted[static_cast<int>(currentPiece->shape)]) {
             shapesCounted[static_cast<int>(currentPiece->shape)] = true;
-            countOfShapes++; // Incrémenter le nombre de formes
+            countOfShapes++; // Incrï¿½menter le nombre de formes
         }
 
-        // Passer à la pièce suivante
+        // Passer ï¿½ la piï¿½ce suivante
         currentPiece = currentPiece->nextPiece;
-    } while (currentPiece->nextPiece != game->head);
+    } while (currentPiece != game->head);
 }
 
 
 
 int main()
 {
+#ifdef _WIN32
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hConsole != INVALID_HANDLE_VALUE) {
        DWORD mode = 0;
@@ -168,6 +171,7 @@ int main()
           SetConsoleMode(hConsole, mode);
        }
     }
+#endif
     // Seed the random number generator
     srand(static_cast<unsigned int>(time(nullptr)));
 
@@ -208,7 +212,13 @@ int main()
         // Display current game state
         cout << "Current game state: ";
         currentGame->updateGame(currentGame);
-        displayGamePieces(currentGame->getPieces(), currentGame->piecesCount);
+        if (currentGame->piecesCount > 0) {
+            Piece** pieces = currentGame->getPieces();
+            displayGamePieces(pieces, currentGame->piecesCount);
+            delete[] pieces;
+        } else {
+            cout << "(empty)" << endl;
+        }
 
         // Display next piece
         cout << "Next piece: " << nextPiece->displayPiece() << endl;
@@ -221,13 +231,16 @@ int main()
 
         countOfColorsAndShapes(currentGame, colorCounter, shapeCounter);
 
+        bool inserted = false;
         switch (choice)
         {
         case 'j':
             currentGame->insertPieceInLeft(currentGame, nextPiece);
+            inserted = true;
             break;
         case 'k':
             currentGame->insertPieceInRight(currentGame, nextPiece);
+            inserted = true;
             break;
         case 'c':
             //chosenColor = displayColorMenu(currentGame->colorIndex > 4, currentGame->colorIndex == 6);
@@ -247,6 +260,10 @@ int main()
             // Invalid choice
             cout << "Invalid choice. Please try again." << endl;
             break;
+        }
+
+        if (!inserted) {
+            delete nextPiece;
         }
 
         //cout << currentGame->piecesCount <<endl;

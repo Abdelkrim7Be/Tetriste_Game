@@ -6,7 +6,9 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#ifdef _WIN32
 #include <windows.h>
+#endif
 #include <math.h>
 
 using namespace std;
@@ -14,103 +16,93 @@ using namespace std;
 // The constructor of the game
 Game::Game(int colorIndex, int shapeIndex)
 {
-
     this->head = nullptr;
     this->score = 0;
     this->piecesCount = 0;
     this->colorIndex = colorIndex;
     this->shapeIndex = shapeIndex;
-    //cout << "Game constructor success" << endl;
 }
 
 // The destrcutor of the game
 Game::~Game()
 {
-    Piece *current = head;
+    if (head == nullptr) return;
+    
+    Piece* tail = head;
+    int count = 1;
+    while (tail->nextPiece != head && count < piecesCount) {
+        tail = tail->nextPiece;
+        count++;
+    }
+    tail->nextPiece = nullptr;
+    
+    Piece* current = head;
     while (current != nullptr)
     {
-        Piece *next = current->nextPiece;
+        Piece* next = current->nextPiece;
         delete current;
         current = next;
     }
-    //cout << "Game destructor success" << endl;
+    head = nullptr;
+    piecesCount = 0;
 }
 
 string displayPieceAsString(Piece *piece)
 {
-
    T_Color color = static_cast<T_Color>(static_cast<int>(piece->color));
    T_Shape shape = static_cast<T_Shape>(static_cast<int>(piece->shape));
 
-    // Convert enums to strings
     string colorStr;
     string shapeStr;
 
     switch (color) {
         case T_Color::BLUE:
-            colorStr = "\033[34m"; // Blue color
+            colorStr = "\033[34m";
             break;
         case T_Color::YELLOW:
-            colorStr = "\033[33m"; // Yellow color
+            colorStr = "\033[33m";
             break;
         case T_Color::RED:
-            colorStr = "\033[31m"; // Red color
+            colorStr = "\033[31m";
             break;
         case T_Color::GREEN:
-            colorStr = "\033[32m"; // Green color
+            colorStr = "\033[32m";
             break;
         case T_Color::WHITE:
-            colorStr = "\033[37m"; // White color
+            colorStr = "\033[37m";
             break;
     }
     switch (shape) {
         case T_Shape::SQUARE:
-            shapeStr = "Square"; // Square Unicode character
+            shapeStr = "Square";
             break;
         case T_Shape::DIAMOND:
-            shapeStr = "Diamond"; // Diamond Unicode character
+            shapeStr = "Diamond";
             break;
         case T_Shape::CIRCLE:
-            shapeStr = "Circle"; // Circle Unicode character
+            shapeStr = "Circle";
             break;
         case T_Shape::TRIANGLE:
-            shapeStr = "Triangle"; // Triangle Unicode character
+            shapeStr = "Triangle";
             break;
         case T_Shape::STAR:
-            shapeStr = "Star"; // Star Unicode character
+            shapeStr = "Star";
             break;
     }
 
-    // Combine color and shape strings
-    string displayStr = colorStr + shapeStr + "\033[0m";
-
-    return displayStr;
+    return colorStr + shapeStr + "\033[0m";
 }
-// The constructor of the Piece class
-//  The constructor of the Piece class
+
 Piece::Piece(T_Color clr, T_Shape spe, Piece *nextPiece, Piece *shapePrev, Piece *shapeNext, Piece *colorPrev, Piece *colorNext)
 {
-    try
-    {
-        T_Color color = clr;
-        T_Shape shape = spe;
-
-        this->color = color;
-        this->shape = shape;
-        this->nextPiece = nextPiece;
-        this->colorNext = colorNext;
-        this->colorPrev = colorPrev;
-        this->shapeNext = shapeNext;
-        this->shapePrev = shapePrev;
-
-        this->displayString = displayPieceAsString(this);
-        //cout << "Piece constructor success" << endl;
-    }
-    catch (const std::exception &e)
-    {
-        std::cout << "Piece constructor failed: " << e.what() << std::endl;
-        throw; // Re-throw the exception to propagate it
-    }
+    this->color = clr;
+    this->shape = spe;
+    this->nextPiece = nextPiece;
+    this->colorNext = colorNext;
+    this->colorPrev = colorPrev;
+    this->shapeNext = shapeNext;
+    this->shapePrev = shapePrev;
+    this->displayString = displayPieceAsString(this);
 }
 
 string Piece::displayPiece()
@@ -120,7 +112,6 @@ string Piece::displayPiece()
 
 Piece::~Piece()
 {
-    //cout << "Piece destructor success" << endl;
 }
 
 Game *initializeGame(int colorIndex, int shapeIndex)
@@ -136,15 +127,13 @@ Game *initializeGame(int colorIndex, int shapeIndex)
     newGame->head = newPiece;
     newGame->piecesCount = 1;
 
-    //cout << "Game initiation success" << endl;
-
     return newGame;
 }
 
-// Calculate the length of a list
 int lengthList(Game *game)
 {
-    int count = 0;
+    if (game->head == nullptr) return 0;
+    int count = 1;
     Piece *current = game->head;
     while (current->nextPiece != game->head)
     {
@@ -156,16 +145,12 @@ int lengthList(Game *game)
 
 Piece *Game::drawPiece(int colorIndex, int shapeIndex)
 {
-    T_Color color = static_cast<T_Color>(colorIndex);
-    T_Shape shape = static_cast<T_Shape>(shapeIndex);
-
-    Piece *newPiece = new Piece(color, shape, nullptr, nullptr, nullptr, nullptr, nullptr);
-    //cout << "Game drawing success" << endl;
-    return newPiece;
+    return new Piece(static_cast<T_Color>(colorIndex), static_cast<T_Shape>(shapeIndex), nullptr, nullptr, nullptr, nullptr, nullptr);
 }
 
 Piece *Game::retrieveTail(Game *game)
 {
+    if (game->head == nullptr) return nullptr;
     Piece *current = game->head;
     while (current->nextPiece != game->head)
     {
@@ -174,61 +159,34 @@ Piece *Game::retrieveTail(Game *game)
     return current;
 }
 
-// Inserting a piece in the right side
 void Game::insertPieceInRight(Game *game, Piece *newPiece)
 {
-    try
+    if (game->piecesCount < 15)
     {
-        if (game->piecesCount < 15)
-        {
-            Piece *tail = retrieveTail(game);
-            tail->nextPiece = newPiece;
-            newPiece->nextPiece = game->head;
-            Game::updateColorAfterAdding(newPiece);
-            Game::updateShapeAfterAdding(newPiece);
-            game->piecesCount++;
-            //cout << "Insertion success in right" << endl;
-        }
-
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Insertion failed: " << e.what() << std::endl;
-        throw; // Re-throw the exception to propagate it
+        Piece *tail = retrieveTail(game);
+        tail->nextPiece = newPiece;
+        newPiece->nextPiece = game->head;
+        game->updateColorAfterAdding(newPiece);
+        game->updateShapeAfterAdding(newPiece);
+        game->piecesCount++;
     }
 }
 
 Piece** Game::getPieces() {
-        // Allocate memory for pieces array
-        Piece** pieces = new Piece*[piecesCount];
-        if (pieces == nullptr) {
-            cerr << "Memory allocation failed. Exiting program." << endl;
-            exit(1);
-        }
-
-        // Copy pieces from the game board to the pieces array
-        Piece* current = head;
-        for (int i = 0; i < piecesCount; ++i) {
-            pieces[i] = current;
-            current = current->nextPiece;
-        }
-
-        return pieces;
+    if (piecesCount == 0) return nullptr;
+    Piece** pieces = new Piece*[piecesCount];
+    Piece* current = head;
+    for (int i = 0; i < piecesCount; ++i) {
+        pieces[i] = current;
+        current = current->nextPiece;
+    }
+    return pieces;
 }
-// Inserting a piece in the left side
+
 void Game::insertPieceInLeft(Game *game, Piece *newPiece)
 {
-    try
-    {
-        Game::insertPieceInRight(game, newPiece);
-        game->head = newPiece;
-        //cout << "Insertion success in left" << endl;
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Insertion failed: " << e.what() << std::endl;
-        throw; // Re-throw the exception to propagate it
-    }
+    game->insertPieceInRight(game, newPiece);
+    game->head = newPiece;
 }
 
 void Game::updateShapeAfterAdding(Piece* piece) {
@@ -248,7 +206,6 @@ void Game::updateShapeAfterAdding(Piece* piece) {
     }
 }
 
-// Function to update the doubly circular linked list of colors for a given piece that is added to the board
 void Game::updateColorAfterAdding(Piece* piece) {
     Piece* current = piece->nextPiece;
     while (current->color != piece->color) {
@@ -270,100 +227,101 @@ int Game::similarSequenceTracker(Game *game, Piece *newPiece)
 {
     int colorSequence = 1, shapeSequence = 1;
     Piece *current = newPiece->nextPiece;
-    for (int i = 1; i <= piecesCount; i++)
+    for (int i = 1; i < game->piecesCount; i++)
     {
-        if (current == game->head)
-            break;
+        if (current == game->head) break;
         if (colorSequence == i && current->color == newPiece->color)
             colorSequence++;
         if (shapeSequence == i && current->shape == newPiece->shape)
             shapeSequence++;
         current = current->nextPiece;
     }
-    if (colorSequence > shapeSequence)
-        return colorSequence;
-    return shapeSequence;
+    return (colorSequence > shapeSequence) ? colorSequence : shapeSequence;
 }
 
 int Game::updateGame(Game *game)
 {
-    try
-    {
-        int initialScore = game->score;
-        // No need to check if there are less than 3 pieces
-        if (game->piecesCount < 3)
-        {
-            return 0;
-        }
+    if (game->piecesCount < 3) return 0;
+    int initialScore = game->score;
+    int combo = 0;
 
+    bool matchFound;
+    do {
+        matchFound = false;
         Piece *currentPiece = game->head;
         Piece *beforeCurrent = nullptr;
-        Piece *tail = retrieveTail(game);
-        int combinationSize = 0;
+        int checked = 0;
+        int originalCount = game->piecesCount;
 
-        int combo = 0;
-        while (currentPiece != nullptr && currentPiece->nextPiece != game->head)
+        while (checked < originalCount && currentPiece != nullptr)
         {
-            combinationSize = similarSequenceTracker(game, currentPiece);
-            //printf("Combination found : %d\n", combinationSize);
-            // If there are at least 3 pieces of the same color or shape, delete them
+            int combinationSize = similarSequenceTracker(game, currentPiece);
             if (combinationSize >= 3)
             {
-                // If there are combos, the score will augment exponentially (3^x or 4^x etc)
+                matchFound = true;
                 combo++;
-                game->score += pow(combinationSize, combo) * 1;
+                game->score += (int)pow(combinationSize, combo);
 
-                // If all the pieces on the board are deleted, it's a win, the game will end so everything will be correctly freed
                 if (game->piecesCount == combinationSize)
                 {
+                    Piece* toDel[20];
+                    Piece* p = game->head;
+                    for (int i = 0; i < combinationSize; i++) {
+                        toDel[i] = p;
+                        p = p->nextPiece;
+                    }
+                    game->piecesCount = 0;
+                    game->head = nullptr;
+                    for (int i = 0; i < combinationSize; i++) delete toDel[i];
                     return -1;
                 }
 
+                Piece* seqStart = currentPiece;
+                Piece* nextAfterSeq = currentPiece;
+                for (int i = 0; i < combinationSize; i++) nextAfterSeq = nextAfterSeq->nextPiece;
+
+                if (beforeCurrent == nullptr) {
+                    Piece* t = seqStart;
+                    while (t->nextPiece != seqStart) t = t->nextPiece;
+                    game->head = nextAfterSeq;
+                    t->nextPiece = game->head;
+                } else {
+                    beforeCurrent->nextPiece = nextAfterSeq;
+                }
+
+                Piece* piecesToDelete[20];
+                Piece* p = seqStart;
+                for (int i = 0; i < combinationSize; i++) {
+                    piecesToDelete[i] = p;
+                    p = p->nextPiece;
+                }
+
+                for (int i = 0; i < combinationSize; i++) {
+                    Piece* target = piecesToDelete[i];
+                    target->shapePrev->shapeNext = target->shapeNext;
+                    target->shapeNext->shapePrev = target->shapePrev;
+                    target->colorPrev->colorNext = target->colorNext;
+                    target->colorNext->colorPrev = target->colorPrev;
+                }
+
+                for (int i = 0; i < combinationSize; i++) delete piecesToDelete[i];
                 game->piecesCount -= combinationSize;
 
-
-
-                for (int i = 0; i < combinationSize; i++)
-                {
-                    currentPiece->shapePrev->shapeNext = currentPiece->shapeNext;
-                    currentPiece->shapeNext->shapePrev = currentPiece->shapePrev;
-                    currentPiece->colorPrev->colorNext = currentPiece->colorNext;
-                    currentPiece->colorNext->colorPrev = currentPiece->colorPrev;
-                    currentPiece->~Piece();
-                    currentPiece = currentPiece->nextPiece;
-                }
-
-                // Removing the pieces from the single circular linked list
-                if (beforeCurrent == nullptr)
-                { // In this case the head got removed
-                    game->head = currentPiece;
-                    tail->nextPiece = game->head;
-                }
-                else
-                {
-                    beforeCurrent->nextPiece = currentPiece;
-                    if (currentPiece == game->head)
-                        tail = beforeCurrent; // Checking whether the tail got removed
-                }
-
-                // Resetting beforeCurrent to nullptr as we need to start over the list
-                beforeCurrent = nullptr;
                 currentPiece = game->head;
+                beforeCurrent = nullptr;
+                checked = 0;
+                originalCount = game->piecesCount;
             }
             else
             {
                 beforeCurrent = currentPiece;
                 currentPiece = currentPiece->nextPiece;
+                checked++;
             }
         }
+    } while (matchFound && game->piecesCount >= 3);
 
-        return game->score - initialScore;
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Update game failed: " << e.what() << std::endl;
-        throw; // Re-throw the exception to propagate it
-    }
+    return game->score - initialScore;
 }
 
 void switchingShapes(Piece *piece){
@@ -376,7 +334,6 @@ void switchingShapes(Piece *piece){
     piece->colorNext->displayString = tempDisplay;
 }
 
-
 void switchingColors(Piece *piece){
     T_Color tempColor = piece->color;
     piece->color = piece->shapeNext->color;
@@ -387,122 +344,91 @@ void switchingColors(Piece *piece){
     piece->shapeNext->displayString = tempDisplay;
 }
 
-void Game::colorShifting(Game *game, T_Color color, int countOfShapes){
-    Piece *currentColor = game->head;
-    Piece *itsPreviousColor = nullptr;
-    int rs = 0;
-
-    while(currentColor->nextPiece != game->head){
-        if(currentColor->color == color){
-            rs = 1;
+void Game::colorShifting(Game *game, T_Color color, int){
+    if (game->head == nullptr) return;
+    Piece *currentColor = nullptr;
+    Piece *temp = game->head;
+    do {
+        if(temp->color == color){
+            currentColor = temp;
             break;
         }
+        temp = temp->nextPiece;
+    } while(temp != game->head);
 
-        currentColor = currentColor->nextPiece;
-    }
-    if(rs == 0){
-        std::cout << "There is no piece having this color" << std::endl;
-    }
+    if(currentColor == nullptr) return;
 
-    itsPreviousColor = currentColor->colorPrev;
-
-    if(currentColor != itsPreviousColor){
-
-        Piece * currentPiece = currentColor;
-
-        while(currentPiece != itsPreviousColor){
-            switchingShapes(currentPiece);
-
-            currentPiece = currentPiece->colorNext;
-        }
+    if(currentColor != currentColor->colorPrev){
+        Piece * current = currentColor;
+        do {
+            switchingShapes(current);
+            current = current->colorNext;
+        } while(current != currentColor);
 
         Piece *heads[6] = { nullptr };
         Piece *tails[6] = { nullptr };
-
-        currentPiece = game->head;
+        current = game->head;
         do {
-            T_Color clr = currentPiece->color;
-            int i = static_cast<int>(clr);
-            if (heads[i] == nullptr) {
-                heads[i] = currentPiece;
-                tails[i] = currentPiece;
-            } else {
-                tails[i]->shapeNext = currentPiece;
-                currentPiece->shapePrev = tails[i];
-                tails[i] = currentPiece;
+            int i = static_cast<int>(current->shape);
+            if (heads[i] == nullptr) heads[i] = tails[i] = current;
+            else {
+                tails[i]->shapeNext = current;
+                current->shapePrev = tails[i];
+                tails[i] = current;
             }
-            currentPiece = currentPiece->nextPiece;
-        } while (currentPiece != game->head);
+            current = current->nextPiece;
+        } while (current != game->head);
 
-        std::cout << "shape count : " << countOfShapes <<endl;
-
-        for (int i = 0; i < countOfShapes; i++) {
+        for (int i = 0; i < 6; i++) {
             if (heads[i] != nullptr) {
                 tails[i]->shapeNext = heads[i];
                 heads[i]->shapePrev = tails[i];
             }
         }
-
     }
 }
 
-void Game::shapeShifting(Game *game, T_Shape shape, int countOfColors){
-
-    Piece *currentShape = game->head;
-    Piece *itsPreviousShape = nullptr;
-    int rs = 0;
-
-    while(currentShape->nextPiece != game->head){
-        if(currentShape->shape == shape){
-            rs = 1;
+void Game::shapeShifting(Game *game, T_Shape shape, int){
+    if (game->head == nullptr) return;
+    Piece *currentShape = nullptr;
+    Piece *temp = game->head;
+    do {
+        if(temp->shape == shape){
+            currentShape = temp;
             break;
         }
+        temp = temp->nextPiece;
+    } while(temp != game->head);
 
-        currentShape = currentShape->nextPiece;
-    }
-    if(rs == 0){
-        std::cout << "There is no piece having this shape" << std::endl;
-    }
+    if(currentShape == nullptr) return;
 
-    itsPreviousShape = currentShape->shapePrev;
-
-    if(currentShape != itsPreviousShape){
-
-        Piece * currentPiece = currentShape;
-
-        while(currentPiece != itsPreviousShape){
-            switchingColors(currentPiece);
-
-            currentPiece = currentPiece->shapeNext;
-        }
+    if(currentShape != currentShape->shapePrev){
+        Piece * current = currentShape;
+        do {
+            switchingColors(current);
+            current = current->shapeNext;
+        } while(current != currentShape);
 
         Piece *heads[6] = { nullptr };
         Piece *tails[6] = { nullptr };
-
-        currentPiece = game->head;
+        current = game->head;
         do {
-            T_Shape sh = currentPiece->shape;
-            int i = static_cast<int>(sh);
-            if (heads[i] == nullptr) {
-                heads[i] = currentPiece;
-                tails[i] = currentPiece;
-            } else {
-                tails[i]->colorNext = currentPiece;
-                currentPiece->colorPrev = tails[i];
-                tails[i] = currentPiece;
+            int i = static_cast<int>(current->color);
+            if (heads[i] == nullptr) heads[i] = tails[i] = current;
+            else {
+                tails[i]->colorNext = current;
+                current->colorPrev = tails[i];
+                tails[i] = current;
             }
-            currentPiece = currentPiece->nextPiece;
-        } while (currentPiece != game->head);
+            current = current->nextPiece;
+        } while (current != game->head);
 
-        std::cout << "color count : " << countOfColors<<endl;
-
-        for (int i = 0; i < countOfColors; i++) {
+        for (int i = 0; i < 6; i++) {
             if (heads[i] != nullptr) {
                 tails[i]->colorNext = heads[i];
                 heads[i]->colorPrev = tails[i];
             }
         }
-
     }
 }
 
