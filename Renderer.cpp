@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include <vector>
+#include <cmath>
 
 Renderer::Renderer(sf::RenderWindow &win, AssetManager &asmgr) 
     : window(win), assets(asmgr) {}
@@ -29,8 +30,8 @@ void Renderer::render(Game &game, Piece *nextPiece) {
     // Draw board pieces
     if (game.head != nullptr) {
         Piece *current = game.head;
-        float startX = 50.0f;
-        float startY = 300.0f;
+        float startX = 80.0f; // Shifted right by 30 to account for center origin (50 + 30)
+        float startY = 325.0f; // Shifted down by 25 to account for center origin (300 + 25)
         int count = 0;
         
         // Draw a horizontal line or "tube" for the pieces
@@ -67,7 +68,10 @@ void Renderer::render(Game &game, Piece *nextPiece) {
         window.draw(nextLabel);
 
         if (nextPiece != nullptr) {
-            drawPiece(*nextPiece, 675.0f, 200.0f);
+            // Pulse animation for the next piece
+            float time = clock.getElapsedTime().asSeconds();
+            float scale = 1.0f + 0.1f * std::sin(time * 4.0f); // Pulsate between 0.9 and 1.1
+            drawPiece(*nextPiece, 675.0f, 200.0f, scale);
         }
 
         // Controls hint
@@ -80,11 +84,16 @@ void Renderer::render(Game &game, Piece *nextPiece) {
     window.display();
 }
 
-void Renderer::drawPiece(Piece &piece, float x, float y) {
+void Renderer::drawPiece(Piece &piece, float x, float y, float scale) {
     std::string texName = getTextureName(piece.color, piece.shape);
     sf::Sprite sprite(assets.getTexture(texName));
+    
+    // Set origin to center for scaling
+    sf::FloatRect bounds = sprite.getLocalBounds();
+    sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
+    
     sprite.setPosition(x, y);
-    // Assuming sprites are roughly 50x50
+    sprite.setScale(scale, scale);
     window.draw(sprite);
 }
 
