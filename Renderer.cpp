@@ -5,38 +5,76 @@ Renderer::Renderer(sf::RenderWindow &win, AssetManager &asmgr)
     : window(win), assets(asmgr) {}
 
 void Renderer::render(Game &game, Piece *nextPiece) {
-    window.clear(sf::Color(30, 30, 30));
+    window.clear(sf::Color(20, 20, 25)); // Slightly darker, more blue-ish background
     
+    // Draw Background Grid
+    sf::RectangleShape gridLine(sf::Vector2f(800.0f, 1.0f));
+    gridLine.setFillColor(sf::Color(40, 40, 50));
+    for (int i = 0; i < 12; ++i) {
+        gridLine.setPosition(0, i * 50.0f);
+        window.draw(gridLine);
+    }
+    gridLine.setSize(sf::Vector2f(1.0f, 600.0f));
+    for (int i = 0; i < 16; ++i) {
+        gridLine.setPosition(i * 50.0f, 0);
+        window.draw(gridLine);
+    }
+
+    // Draw Sidebar Background
+    sf::RectangleShape sidebar(sf::Vector2f(200.0f, 600.0f));
+    sidebar.setPosition(600.0f, 0.0f);
+    sidebar.setFillColor(sf::Color(35, 35, 45, 200));
+    window.draw(sidebar);
+
     // Draw board pieces
     if (game.head != nullptr) {
         Piece *current = game.head;
-        float x = 50.0f;
-        float y = 300.0f;
+        float startX = 50.0f;
+        float startY = 300.0f;
         int count = 0;
         
+        // Draw a horizontal line or "tube" for the pieces
+        sf::RectangleShape tube(sf::Vector2f(550.0f, 60.0f));
+        tube.setPosition(25.0f, 295.0f);
+        tube.setFillColor(sf::Color(50, 50, 60, 100));
+        tube.setOutlineThickness(2);
+        tube.setOutlineColor(sf::Color(100, 100, 120));
+        window.draw(tube);
+
         do {
-            drawPiece(*current, x, y);
-            x += 60.0f;
+            drawPiece(*current, startX + (count * 60.0f), startY);
             current = current->nextPiece;
             count++;
         } while (current != game.head && count < game.piecesCount);
     }
     
-    // Draw next piece preview
-    if (nextPiece != nullptr) {
-        if (assets.hasFont("main")) {
-            sf::Text nextLabel("Next:", assets.getFont("main"), 20);
-            nextLabel.setPosition(600.0f, 50.0f);
-            window.draw(nextLabel);
-        }
-        drawPiece(*nextPiece, 600.0f, 80.0f);
-    }
-    
-    // Draw score
+    // Draw UI in Sidebar
     if (assets.hasFont("main")) {
-        sf::Text scoreText("Score: " + std::to_string(game.score), assets.getFont("main"), 24);
-        scoreText.setPosition(20.0f, 20.0f);
+        // Score section
+        sf::Text scoreLabel("SCORE", assets.getFont("main"), 18);
+        scoreLabel.setPosition(620.0f, 30.0f);
+        scoreLabel.setFillColor(sf::Color(150, 150, 150));
+        window.draw(scoreLabel);
+
+        sf::Text scoreText(std::to_string(game.score), assets.getFont("main"), 36);
+        scoreText.setPosition(620.0f, 55.0f);
         window.draw(scoreText);
+
+        // Next Piece section
+        sf::Text nextLabel("NEXT PIECE", assets.getFont("main"), 18);
+        nextLabel.setPosition(620.0f, 150.0f);
+        nextLabel.setFillColor(sf::Color(150, 150, 150));
+        window.draw(nextLabel);
+
+        if (nextPiece != nullptr) {
+            drawPiece(*nextPiece, 675.0f, 200.0f);
+        }
+
+        // Controls hint
+        sf::Text hint("J: Left\nK: Right\nC: Color\nS: Shape", assets.getFont("main"), 16);
+        hint.setPosition(620.0f, 450.0f);
+        hint.setFillColor(sf::Color(100, 100, 100));
+        window.draw(hint);
     }
     
     window.display();
