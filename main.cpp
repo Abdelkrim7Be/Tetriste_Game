@@ -169,10 +169,14 @@ int main()
                 }
                 
                 if (actionTaken) {
-                    currentGame->updateGame(currentGame);
+                    int scoreChange = currentGame->updateGame(currentGame);
+                    if (scoreChange > 0) {
+                        renderer.addPopup("+" + std::to_string(scoreChange), sf::Vector2f(300.0f, 300.0f));
+                    }
                     nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
                     if (currentGame->piecesCount == 0) {
                         std::cout << "You Won!" << std::endl;
+                        renderer.addPopup("YOU WON!", sf::Vector2f(300.0f, 300.0f), sf::Color::Green);
                     }
                 }
             }

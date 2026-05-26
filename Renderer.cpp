@@ -1,12 +1,14 @@
 #include "Renderer.h"
 #include <vector>
 #include <cmath>
+#include <algorithm>
 
 Renderer::Renderer(sf::RenderWindow &win, AssetManager &asmgr) 
     : window(win), assets(asmgr) {}
 
 void Renderer::render(Game &game, Piece *nextPiece) {
-    window.clear(sf::Color(20, 20, 25)); // Slightly darker, more blue-ish background
+    float deltaTime = clock.restart().asSeconds();
+    window.clear(sf::Color(20, 20, 25)); 
     
     // Draw Background Grid
     sf::RectangleShape gridLine(sf::Vector2f(800.0f, 1.0f));
@@ -30,11 +32,10 @@ void Renderer::render(Game &game, Piece *nextPiece) {
     // Draw board pieces
     if (game.head != nullptr) {
         Piece *current = game.head;
-        float startX = 80.0f; // Shifted right by 30 to account for center origin (50 + 30)
-        float startY = 325.0f; // Shifted down by 25 to account for center origin (300 + 25)
+        float startX = 80.0f; 
+        float startY = 325.0f;
         int count = 0;
         
-        // Draw a horizontal line or "tube" for the pieces
         sf::RectangleShape tube(sf::Vector2f(550.0f, 60.0f));
         tube.setPosition(25.0f, 295.0f);
         tube.setFillColor(sf::Color(50, 50, 60, 100));
@@ -49,9 +50,24 @@ void Renderer::render(Game &game, Piece *nextPiece) {
         } while (current != game.head && count < game.piecesCount);
     }
     
+    // Update and Draw Popups
+    for (auto it = popups.begin(); it != popups.end(); ) {
+        it->lifetime -= deltaTime;
+        if (it->lifetime <= 0) {
+            it = popups.erase(it);
+        } else {
+            it->text.move(it->velocity * deltaTime);
+            // Fade out
+            sf::Color c = it->text.getFillColor();
+            c.a = static_cast<sf::Uint8>(255 * (it->lifetime / it->maxLifetime));
+            it->text.setFillColor(c);
+            window.draw(it->text);
+            ++it;
+        }
+    }
+
     // Draw UI in Sidebar
     if (assets.hasFont("main")) {
-        // Score section
         sf::Text scoreLabel("SCORE", assets.getFont("main"), 18);
         scoreLabel.setPosition(620.0f, 30.0f);
         scoreLabel.setFillColor(sf::Color(150, 150, 150));
@@ -61,20 +77,19 @@ void Renderer::render(Game &game, Piece *nextPiece) {
         scoreText.setPosition(620.0f, 55.0f);
         window.draw(scoreText);
 
-        // Next Piece section
         sf::Text nextLabel("NEXT PIECE", assets.getFont("main"), 18);
         nextLabel.setPosition(620.0f, 150.0f);
         nextLabel.setFillColor(sf::Color(150, 150, 150));
         window.draw(nextLabel);
 
         if (nextPiece != nullptr) {
-            // Pulse animation for the next piece
-            float time = clock.getElapsedTime().asSeconds();
-            float scale = 1.0f + 0.1f * std::sin(time * 4.0f); // Pulsate between 0.9 and 1.1
+            // Pulse animation for the next piece using a total time accumulation
+            static float totalTime = 0;
+            totalTime += deltaTime;
+            float scale = 1.0f + 0.1f * std::sin(totalTime * 4.0f);
             drawPiece(*nextPiece, 675.0f, 200.0f, scale);
         }
 
-        // Controls hint
         sf::Text hint("J: Left\nK: Right\nC: Color\nS: Shape", assets.getFont("main"), 16);
         hint.setPosition(620.0f, 450.0f);
         hint.setFillColor(sf::Color(100, 100, 100));
@@ -84,11 +99,30 @@ void Renderer::render(Game &game, Piece *nextPiece) {
     window.display();
 }
 
+void Renderer::addPopup(std::string content, sf::Vector2f position, sf::Color color) {
+    if (!assets.hasFont("main")) return;
+    
+    FloatingText popup;
+    popup.text.setFont(assets.getFont("main"));
+    popup.text.setString(content);
+    popup.text.setCharacterSize(24);
+    popup.text.setFillColor(color);
+    // Center text
+    sf::FloatRect bounds = popup.text.getLocalBounds();
+    popup.text.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
+    popup.text.setPosition(position);
+    
+    popup.lifetime = 1.5f;
+    popup.maxLifetime = 1.5f;
+    popup.velocity = sf::Vector2f(0.0f, -50.0f); // Move upwards
+    
+    popups.push_back(popup);
+}
+
 void Renderer::drawPiece(Piece &piece, float x, float y, float scale) {
     std::string texName = getTextureName(piece.color, piece.shape);
     sf::Sprite sprite(assets.getTexture(texName));
     
-    // Set origin to center for scaling
     sf::FloatRect bounds = sprite.getLocalBounds();
     sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
     
