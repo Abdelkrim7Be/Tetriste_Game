@@ -293,12 +293,16 @@ void Renderer::drawAboutPage() {
         sf::Text rules(
             "PURPOSE:\n"
             "Master complex data structures & cyclic shifts in C++.\n\n"
-            "RULES:\n"
-            "1. Insert pieces Left (J) or Right (K).\n"
-            "2. Match 3+ pieces of same Color or Shape to score.\n"
-            "3. Shifting (C/S) uses the attribute of your NEXT piece\n"
-            "   to rotate all pieces sharing that attribute.\n"
-            "4. Mastery of the triple-linked list is key to victory.", 
+            "CONTROLS:\n"
+            " - J / K: Insert pieces Left or Right\n"
+            " - C / S: Color / Shape Shift (using Next Piece)\n"
+            " - +/-  : Adjust Volume\n"
+            " - ESC  : Pause Game\n"
+            " - A    : Toggle this help screen\n\n"
+            "MECHANICS:\n"
+            "1. Align 3+ pieces of same Color or Shape to clear them.\n"
+            "2. Shifting rotates pieces sharing the Next Piece's trait.\n"
+            "3. Success requires strategic use of triple-linked logic.", 
             assets.getFont("main"), 20
         );
         rules.setOrigin(rules.getLocalBounds().width / 2.0f, 0);
