@@ -5,10 +5,11 @@
 #include <SFML/Audio.hpp>
 #include <map>
 #include <string>
+#include <nlohmann/json.hpp>
 
 class AssetManager {
 public:
-    AssetManager() {}
+    AssetManager();
     
     bool loadTexture(std::string name, std::string filename);
     sf::Texture &getTexture(std::string name);
@@ -23,8 +24,11 @@ public:
     sf::SoundBuffer& getSoundBuffer(std::string name);
     bool hasSoundBuffer(std::string name) const;
 
-    void setVolume(float volume) { this->volume = volume; }
+    void setVolume(float volume) { this->volume = volume; saveConfig(); }
     float getVolume() const { return volume; }
+
+    void loadConfig();
+    void saveConfig();
 
     private:
     std::map<std::string, sf::Texture> textures;

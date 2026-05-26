@@ -20,7 +20,7 @@ set(SOURCES
 add_executable(Tetriste ${SOURCES})
 
 # Include directories
-target_include_directories(Tetriste PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(Tetriste PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Link libraries
 target_link_libraries(Tetriste PRIVATE sfml-graphics sfml-window sfml-audio sfml-system)

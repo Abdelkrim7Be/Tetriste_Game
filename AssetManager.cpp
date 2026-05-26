@@ -1,5 +1,35 @@
 #include "AssetManager.h"
 #include <iostream>
+#include <fstream>
+
+using json = nlohmann::json;
+
+AssetManager::AssetManager() {
+    loadConfig();
+}
+
+void AssetManager::loadConfig() {
+    std::ifstream file("assets/config.json");
+    if (!file.is_open()) return;
+    try {
+        json j;
+        file >> j;
+        if (j.contains("volume")) {
+            this->volume = j["volume"];
+        }
+    } catch (...) {}
+    file.close();
+}
+
+void AssetManager::saveConfig() {
+    json j;
+    j["volume"] = this->volume;
+    std::ofstream file("assets/config.json");
+    if (file.is_open()) {
+        file << j.dump(4);
+        file.close();
+    }
+}
 
 bool AssetManager::loadTexture(std::string name, std::string filename) {
     sf::Texture tex;
