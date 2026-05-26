@@ -9,9 +9,12 @@ Renderer::Renderer(sf::RenderWindow &win, AssetManager &asmgr, UserManager &umgr
 
 void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
     float deltaTime = clock.restart().asSeconds();
+    cursorBlinkTimer += deltaTime;
     window.clear(sf::Color(20, 20, 25)); 
     
-    if (state == GameState::MENU) {
+    if (state == GameState::LOGIN) {
+        drawLoginScreen();
+    } else if (state == GameState::MENU) {
         drawMainMenu();
     } else if (state == GameState::GAME_OVER) {
         drawGameOver(game.score);
@@ -183,6 +186,87 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
     }
 
     window.display();
+}
+
+void Renderer::drawLoginScreen() {
+    if (!assets.hasFont("main")) return;
+
+    float centerX = window.getSize().x / 2.0f;
+    float centerY = window.getSize().y / 2.0f;
+
+    // Animated background effect
+    static float time = 0;
+    time += 0.01f;
+    sf::CircleShape bgCircle(300.0f);
+    bgCircle.setOrigin(300.0f, 300.0f);
+    bgCircle.setPosition(centerX + std::sin(time) * 50.0f, centerY + std::cos(time) * 50.0f);
+    bgCircle.setFillColor(sf::Color(0, 255, 150, 15));
+    window.draw(bgCircle);
+
+    sf::Text title("TETRISTE", assets.getFont("main"), 80);
+    title.setOrigin(title.getLocalBounds().width / 2.0f, 0);
+    title.setPosition(centerX, 50.0f);
+    title.setFillColor(sf::Color(0, 255, 150));
+    window.draw(title);
+
+    sf::Text subtitle("MISSION AUTHENTICATION", assets.getFont("main"), 24);
+    subtitle.setOrigin(subtitle.getLocalBounds().width / 2.0f, 0);
+    subtitle.setPosition(centerX, 140.0f);
+    subtitle.setFillColor(sf::Color(100, 100, 150));
+    window.draw(subtitle);
+
+    // Form Background
+    sf::RectangleShape formBg(sf::Vector2f(400.0f, 300.0f));
+    formBg.setOrigin(200.0f, 150.0f);
+    formBg.setPosition(centerX, centerY + 20.0f);
+    formBg.setFillColor(sf::Color(35, 35, 45, 200));
+    formBg.setOutlineThickness(2.0f);
+    formBg.setOutlineColor(sf::Color(0, 255, 150, 100));
+    window.draw(formBg);
+
+    // Input Fields
+    auto drawField = [&](std::string label, std::string value, float y, bool active, bool isPassword) {
+        sf::Text labelText(label, assets.getFont("main"), 16);
+        labelText.setPosition(centerX - 180.0f, y - 25.0f);
+        labelText.setFillColor(sf::Color(150, 150, 150));
+        window.draw(labelText);
+
+        sf::RectangleShape field(sf::Vector2f(360.0f, 40.0f));
+        field.setOrigin(180.0f, 20.0f);
+        field.setPosition(centerX, y);
+        field.setFillColor(sf::Color(20, 20, 30));
+        field.setOutlineThickness(active ? 2.0f : 1.0f);
+        field.setOutlineColor(active ? sf::Color(0, 255, 150) : sf::Color(100, 100, 100));
+        window.draw(field);
+
+        std::string displayVal = isPassword ? std::string(value.length(), '*') : value;
+        if (active && static_cast<int>(cursorBlinkTimer * 2) % 2 == 0) displayVal += "|";
+        
+        sf::Text valText(displayVal, assets.getFont("main"), 20);
+        valText.setPosition(centerX - 170.0f, y - 12.0f);
+        window.draw(valText);
+    };
+
+    drawField("PSEUDO", loginPseudo, centerY - 40.0f, activeLoginField == 0, false);
+    drawField("PASSWORD", loginPassword, centerY + 40.0f, activeLoginField == 1, true);
+
+    sf::Text hint("TAB to switch | ENTER to Login | SHIFT+ENTER to Register", assets.getFont("main"), 14);
+    hint.setOrigin(hint.getLocalBounds().width / 2.0f, 0);
+    hint.setPosition(centerX, centerY + 110.0f);
+    hint.setFillColor(sf::Color(100, 100, 100));
+    window.draw(hint);
+}
+
+void Renderer::handleTextInput(uint32_t unicode) {
+    if (unicode == '\t' || unicode == '\r' || unicode == '\n') return;
+
+    std::string &target = (activeLoginField == 0) ? loginPseudo : loginPassword;
+
+    if (unicode == 8) { // Backspace
+        if (!target.empty()) target.pop_back();
+    } else if (unicode < 128) {
+        if (target.length() < 20) target += static_cast<char>(unicode);
+    }
 }
 
 void Renderer::drawMainMenu() {
