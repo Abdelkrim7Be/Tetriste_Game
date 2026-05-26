@@ -108,7 +108,48 @@ int main()
     srand(static_cast<unsigned int>(time(nullptr)));
 
     UserManager userManager;
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Tetriste Mastery", sf::Style::Default);
+    std::string pseudo, password;
+    bool loggedIn = false;
+
+    while (!loggedIn) {
+        std::cout << "\n------------------------------------------" << std::endl;
+        std::cout << "   TETRISTE: MASTER ALGORITHMICS" << std::endl;
+        std::cout << "------------------------------------------" << std::endl;
+        std::cout << "1. Login" << std::endl;
+        std::cout << "2. Register" << std::endl;
+        std::cout << "3. Exit" << std::endl;
+        std::cout << "Choice: ";
+        int choice;
+        if (!(std::cin >> choice)) {
+            std::cin.clear();
+            std::cin.ignore(1000, '\n');
+            continue;
+        }
+
+        if (choice == 3) return 0;
+
+        std::cout << "Pseudo: ";
+        std::cin >> pseudo;
+        std::cout << "Password: ";
+        std::cin >> password;
+
+        if (choice == 1) {
+            if (userManager.login(pseudo, password)) {
+                loggedIn = true;
+                std::cout << "Welcome back, " << pseudo << "!" << std::endl;
+            } else {
+                std::cout << "Invalid pseudo or password." << std::endl;
+            }
+        } else if (choice == 2) {
+            if (userManager.registerUser(pseudo, password)) {
+                std::cout << "Registration successful! Please login." << std::endl;
+            } else {
+                std::cout << "Pseudo already taken." << std::endl;
+            }
+        }
+    }
+
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Tetriste Graphical", sf::Style::Default);
     window.setFramerateLimit(60);
 
     AssetManager assets;
@@ -129,8 +170,12 @@ int main()
         "assets/font.ttf"
     };
 
+    bool fontLoaded = false;
     for (const auto& path : fontPaths) {
-        if (assets.loadFont("main", path)) break;
+        if (assets.loadFont("main", path)) {
+            fontLoaded = true;
+            break;
+        }
     }
 
     Renderer renderer(window, assets, userManager);
@@ -144,7 +189,7 @@ int main()
         music.play();
     }
 
-    GameState state = GameState::LOGIN;
+    GameState state = GameState::MENU;
     Game *currentGame = nullptr;
     Piece *nextPiece = nullptr;
 
@@ -156,33 +201,19 @@ int main()
             if (event.type == sf::Event::Closed)
                 window.close();
 
-            if (event.type == sf::Event::TextEntered && state == GameState::LOGIN) {
-                renderer.handleTextInput(event.text.unicode);
+            if (event.type == sf::Event::Resized)
+            {
+                unsigned int width = std::max(800u, event.size.width);
+                unsigned int height = std::max(600u, event.size.height);
+                if (event.size.width < 800 || event.size.height < 600) {
+                    window.setSize(sf::Vector2u(width, height));
+                }
+                sf::FloatRect visibleArea(0, 0, static_cast<float>(width), static_cast<float>(height));
+                window.setView(sf::View(visibleArea));
             }
             
             if (event.type == sf::Event::KeyPressed) {
-                if (state == GameState::LOGIN) {
-                    if (event.key.code == sf::Keyboard::Tab) {
-                        renderer.switchLoginField();
-                    } else if (event.key.code == sf::Keyboard::Enter) {
-                        std::string p = renderer.getLoginPseudo();
-                        std::string pw = renderer.getLoginPassword();
-                        if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
-                            if (userManager.registerUser(p, pw)) {
-                                renderer.addPopup("Registered! Please login", sf::Vector2f(400, 500), sf::Color::Green);
-                            } else {
-                                renderer.addPopup("Pseudo taken!", sf::Vector2f(400, 500), sf::Color::Red);
-                            }
-                        } else {
-                            if (userManager.login(p, pw)) {
-                                state = GameState::MENU;
-                                renderer.addPopup("Welcome, " + p + "!", sf::Vector2f(400, 300), sf::Color::Cyan);
-                            } else {
-                                renderer.addPopup("Invalid Credentials", sf::Vector2f(400, 500), sf::Color::Red);
-                            }
-                        }
-                    }
-                } else if (state == GameState::MENU) {
+                if (state == GameState::MENU) {
                     if (event.key.code == sf::Keyboard::Up) {
                         renderer.setMenuSelection((renderer.getMenuSelection() + 2) % 3);
                     } else if (event.key.code == sf::Keyboard::Down) {
