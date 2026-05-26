@@ -143,7 +143,7 @@ int main()
 {
     srand(static_cast<unsigned int>(time(nullptr)));
 
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Tetriste Graphical");
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Tetriste Graphical", sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
 
     AssetManager assets;
@@ -228,7 +228,7 @@ int main()
                     shifted = true;
                 }
                 
-                if (actionTaken) {
+                if (actionTaken && currentGame->piecesCount > 0) {
                     if (assets.hasSoundBuffer("place")) {
                         sound.setBuffer(assets.getSoundBuffer("place"));
                         sound.play();
@@ -241,12 +241,15 @@ int main()
                             sound.play();
                         }
                     }
-                    nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
+                    
                     if (currentGame->piecesCount == 0) {
                         std::cout << "You Won!" << std::endl;
                         renderer.addPopup("YOU WON!", sf::Vector2f(300.0f, 300.0f), sf::Color::Green);
+                        nextPiece = nullptr; // Clear next piece on win
+                    } else {
+                        nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
                     }
-                } else if (shifted) {
+                } else if (shifted && currentGame->piecesCount > 0) {
                     if (assets.hasSoundBuffer("shift")) {
                         sound.setBuffer(assets.getSoundBuffer("shift"));
                         sound.play();

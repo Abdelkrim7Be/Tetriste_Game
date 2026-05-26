@@ -13,8 +13,10 @@ Game::Game(int colorIndex, int shapeIndex)
 
 Game::~Game()
 {
+    std::cout << "DEBUG: Destroying Game, piecesCount=" << piecesCount << std::endl;
     if (head == nullptr) return;
     
+    // Break circularity for easier deletion
     Piece* tail = head;
     int count = 1;
     while (tail->nextPiece != head && count < piecesCount) {
@@ -32,6 +34,7 @@ Game::~Game()
     }
     head = nullptr;
     piecesCount = 0;
+    std::cout << "DEBUG: Game destroyed successfully" << std::endl;
 }
 
 Game* Game::initializeGame(int colorIndex, int shapeIndex)
@@ -171,6 +174,7 @@ int Game::updateGame(Game *game)
 
                 if (game->piecesCount == combinationSize)
                 {
+                    std::cout << "DEBUG: Winning state reached, deleting all pieces" << std::endl;
                     Piece* toDel[20];
                     Piece* p = game->head;
                     for (int i = 0; i < combinationSize; i++) {
@@ -179,7 +183,10 @@ int Game::updateGame(Game *game)
                     }
                     game->piecesCount = 0;
                     game->head = nullptr;
-                    for (int i = 0; i < combinationSize; i++) delete toDel[i];
+                    for (int i = 0; i < combinationSize; i++) {
+                        if (toDel[i]) delete toDel[i];
+                    }
+                    std::cout << "DEBUG: Winning state cleanup done" << std::endl;
                     return -1;
                 }
 
