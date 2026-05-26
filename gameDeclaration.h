@@ -2,6 +2,8 @@
 #define GAME_H_INCLUDED
 #include "pieceDeclaration.h"
 #include "colorShape.h"
+#include <vector>
+#include <memory>
 
 using namespace std;
 
@@ -9,6 +11,7 @@ class Game
 {
 public:
     Piece *head;
+    std::vector<std::unique_ptr<Piece>> ownedPieces;
     int score;
 
     int piecesCount;

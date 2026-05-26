@@ -15,25 +15,9 @@ Game::Game(int colorIndex, int shapeIndex)
 Game::~Game()
 {
     std::cout << "DEBUG: Destroying Game, piecesCount=" << piecesCount << std::endl;
-    if (head == nullptr) return;
-    
-    Piece* tail = head;
-    int count = 1;
-    while (tail->nextPiece != head && count < piecesCount) {
-        tail = tail->nextPiece;
-        count++;
-    }
-    tail->nextPiece = nullptr;
-    
-    Piece* current = head;
-    while (current != nullptr)
-    {
-        Piece* next = current->nextPiece;
-        delete current;
-        current = next;
-    }
+    // Circular references handled by vector ownership clearing
     head = nullptr;
-    piecesCount = 0;
+    ownedPieces.clear();
     std::cout << "DEBUG: Game destroyed successfully" << std::endl;
 }
 
@@ -55,7 +39,10 @@ Game* Game::initializeGame(int colorIndex, int shapeIndex)
 
 Piece* Game::drawPiece(int colorIndex, int shapeIndex)
 {
-    return new Piece(static_cast<T_Color>(colorIndex), static_cast<T_Shape>(shapeIndex), nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto piece = std::unique_ptr<Piece>(new Piece(static_cast<T_Color>(colorIndex), static_cast<T_Shape>(shapeIndex), nullptr, nullptr, nullptr, nullptr, nullptr));
+    Piece* ptr = piece.get();
+    ownedPieces.push_back(std::move(piece));
+    return ptr;
 }
 
 Piece* Game::retrieveTail(Game *game)
@@ -191,7 +178,14 @@ int Game::updateGame(Game *game)
                     }
                     game->piecesCount = 0;
                     game->head = nullptr;
-                    for (auto target : toDel) delete target;
+                    for (auto target : toDel) {
+                        for (auto it = game->ownedPieces.begin(); it != game->ownedPieces.end(); ++it) {
+                            if (it->get() == target) {
+                                game->ownedPieces.erase(it);
+                                break;
+                            }
+                        }
+                    }
                     std::cout << "DEBUG: Winning state cleanup done" << std::endl;
                     return -1;
                 }
@@ -223,7 +217,14 @@ int Game::updateGame(Game *game)
                     target->colorNext->colorPrev = target->colorPrev;
                 }
 
-                for (auto target : piecesToDelete) delete target;
+                for (auto target : piecesToDelete) {
+                    for (auto it = game->ownedPieces.begin(); it != game->ownedPieces.end(); ++it) {
+                        if (it->get() == target) {
+                            game->ownedPieces.erase(it);
+                            break;
+                        }
+                    }
+                }
                 game->piecesCount -= combinationSize;
 
                 currentPiece = game->head;

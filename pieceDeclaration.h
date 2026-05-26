@@ -3,6 +3,7 @@
 
 #include "colorShape.h"
 #include <string>
+#include <memory>
 
 using namespace std;
 
