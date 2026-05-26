@@ -256,6 +256,18 @@ int main()
                         continue;
                     }
 
+                    if (event.key.code == sf::Keyboard::Add || event.key.code == sf::Keyboard::Equal) {
+                        float v = std::min(100.0f, assets.getVolume() + 5.0f);
+                        assets.setVolume(v);
+                        music.setVolume(v);
+                        renderer.addPopup("Volume: " + std::to_string((int)v), sf::Vector2f(window.getSize().x - 100.0f, 30.0f));
+                    } else if (event.key.code == sf::Keyboard::Subtract || event.key.code == sf::Keyboard::Dash) {
+                        float v = std::max(0.0f, assets.getVolume() - 5.0f);
+                        assets.setVolume(v);
+                        music.setVolume(v);
+                        renderer.addPopup("Volume: " + std::to_string((int)v), sf::Vector2f(window.getSize().x - 100.0f, 30.0f));
+                    }
+
                     if (nextPiece == nullptr && (currentGame == nullptr || currentGame->piecesCount == 0)) continue;
 
                     sf::Vector2u winSize = window.getSize();
@@ -306,30 +318,32 @@ int main()
                     if (actionTaken && currentGame->piecesCount > 0) {
                         if (assets.hasSoundBuffer("place")) {
                             sound.setBuffer(assets.getSoundBuffer("place"));
+                            sound.setVolume(assets.getVolume());
                             sound.play();
                         }
                         int scoreChange = currentGame->updateGame(currentGame);
                         if (scoreChange > 0) {
                             if (assets.hasSoundBuffer("match")) {
                                 sound.setBuffer(assets.getSoundBuffer("match"));
+                                sound.setVolume(assets.getVolume());
                                 sound.play();
                             }
                             renderer.addPopup("+" + std::to_string(scoreChange), sf::Vector2f(window.getSize().x / 2.0f, 100.0f));
                             userManager.updateRecord(currentGame->score);
                         }
-                        
+
                         if (currentGame->piecesCount == 0) {
                             renderer.addPopup("BOARD CLEARED!", sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f), sf::Color::Green);
                         }
                         nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
-                    }
-                    if (shifted) {
+                        }
+                        if (shifted) {
                         if (assets.hasSoundBuffer("shift")) {
                             sound.setBuffer(assets.getSoundBuffer("shift"));
+                            sound.setVolume(assets.getVolume());
                             sound.play();
                         }
-                    }
-                }
+                        }                }
             }
         }
 
