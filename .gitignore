@@ -1,1 +1,10 @@
 GUIDE.md
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+!Makefile
+Tetriste
+*.o
+*.exe
