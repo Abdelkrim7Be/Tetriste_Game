@@ -55,7 +55,6 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
             float currentX = startX, currentY = startY;
             float spacingX = 60.0f, spacingY = 80.0f;
             int count = 0;
-            float boardWidth = sidebarX - 80.0f;
 
             do {
                 drawFancyPiece(*current, currentX, currentY);
