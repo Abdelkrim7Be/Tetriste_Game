@@ -7,6 +7,7 @@
 #include "gameDeclaration.h"
 #include "AssetManager.h"
 #include "UserManager.h"
+#include "UITheme.hpp"
 
 struct FloatingText {
     sf::Text text;
@@ -48,6 +49,11 @@ private:
     bool showAbout = false;
     int menuSelection = 0; // 0: Play, 1: About, 2: Exit
     
+    // UI Helpers
+    void drawCard(const std::string& title, sf::Vector2f pos, sf::Vector2f size);
+    void drawFancyPiece(Piece &piece, float x, float y, float scale = 1.0f);
+    void drawGlassPanel(sf::Vector2f size, sf::Vector2f pos);
+
     // Login UI State
     std::string loginPseudo;
     std::string loginPassword;

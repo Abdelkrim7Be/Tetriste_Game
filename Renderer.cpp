@@ -10,7 +10,7 @@ Renderer::Renderer(sf::RenderWindow &win, AssetManager &asmgr, UserManager &umgr
 void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
     float deltaTime = clock.restart().asSeconds();
     cursorBlinkTimer += deltaTime;
-    window.clear(sf::Color(20, 20, 25)); 
+    window.clear(UI::DeepNavy); 
     
     if (state == GameState::LOGIN) {
         drawLoginScreen();
@@ -22,56 +22,45 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
         sf::Vector2u winSize = window.getSize();
         float viewWidth = static_cast<float>(winSize.x);
         float viewHeight = static_cast<float>(winSize.y);
-        float sidebarWidth = 200.0f;
+        float sidebarWidth = 240.0f;
         float sidebarX = viewWidth - sidebarWidth;
 
-        // Draw Dynamic Background Grid
+        // Subtle background grid
         sf::RectangleShape gridLine(sf::Vector2f(viewWidth, 1.0f));
-        gridLine.setFillColor(sf::Color(40, 40, 50));
-        for (float y = 0; y < viewHeight; y += 50.0f) {
+        gridLine.setFillColor(sf::Color(255, 255, 255, 20));
+        for (float y = 0; y < viewHeight; y += 40.0f) {
             gridLine.setPosition(0, y);
             window.draw(gridLine);
         }
         gridLine.setSize(sf::Vector2f(1.0f, viewHeight));
-        for (float x = 0; x < viewWidth; x += 50.0f) {
+        for (float x = 0; x < viewWidth; x += 40.0f) {
             gridLine.setPosition(x, 0);
             window.draw(gridLine);
         }
 
-        // Draw Sidebar Background (Anchored Right)
-        sf::RectangleShape sidebar(sf::Vector2f(sidebarWidth, viewHeight));
-        sidebar.setPosition(sidebarX, 0.0f);
-        sidebar.setFillColor(sf::Color(35, 35, 45, 220));
-        window.draw(sidebar);
+        // Play area border pulse
+        static float totalT = 0; totalT += deltaTime;
+        float alpha = 100 + 50 * std::sin(totalT * 2.0f);
+        sf::RectangleShape border(sf::Vector2f(sidebarX - 20.0f, viewHeight - 20.0f));
+        border.setPosition(10.0f, 10.0f);
+        border.setFillColor(sf::Color::Transparent);
+        border.setOutlineThickness(2.0f);
+        border.setOutlineColor(sf::Color(UI::NeonGreen.r, UI::NeonGreen.g, UI::NeonGreen.b, (sf::Uint8)alpha));
+        window.draw(border);
 
-        // Draw board pieces with wrapping logic
+        // Draw board pieces
         if (game.head != nullptr) {
             Piece *current = game.head;
-            float startX = 60.0f; 
-            float startY = 60.0f;
-            float currentX = startX;
-            float currentY = startY;
-            float spacingX = 60.0f;
-            float spacingY = 80.0f;
+            float startX = 60.0f, startY = 60.0f;
+            float currentX = startX, currentY = startY;
+            float spacingX = 60.0f, spacingY = 80.0f;
             int count = 0;
-            
-            // Draw board rows background
-            float boardWidth = sidebarX - startX;
-            int rowsNeeded = (game.piecesCount * spacingX / boardWidth) + 1;
-            for (int i = 0; i < rowsNeeded; ++i) {
-                sf::RectangleShape rowBg(sf::Vector2f(boardWidth + 20.0f, 60.0f));
-                rowBg.setPosition(startX - 30.0f, startY + (i * spacingY) - 30.0f);
-                rowBg.setFillColor(sf::Color(50, 50, 60, 100));
-                rowBg.setOutlineThickness(1);
-                rowBg.setOutlineColor(sf::Color(100, 100, 120, 150));
-                window.draw(rowBg);
-            }
+            float boardWidth = sidebarX - 80.0f;
 
             do {
-                drawPiece(*current, currentX, currentY);
+                drawFancyPiece(*current, currentX, currentY);
                 current = current->nextPiece;
                 count++;
-                
                 currentX += spacingX;
                 if (currentX > sidebarX - spacingX) {
                     currentX = startX;
@@ -80,374 +69,277 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
             } while (current != game.head && count < game.piecesCount);
         }
         
-        // Update and Draw Popups
+        // Popups
         for (auto it = popups.begin(); it != popups.end(); ) {
             it->lifetime -= deltaTime;
-            if (it->lifetime <= 0) {
-                it = popups.erase(it);
-            } else {
+            if (it->lifetime <= 0) it = popups.erase(it);
+            else {
                 it->text.move(it->velocity * deltaTime);
-                // Fade out
                 sf::Color c = it->text.getFillColor();
-                c.a = static_cast<sf::Uint8>(255 * (it->lifetime / it->maxLifetime));
+                c.a = (sf::Uint8)(255 * (it->lifetime / it->maxLifetime));
                 it->text.setFillColor(c);
                 window.draw(it->text);
                 ++it;
             }
         }
 
-        // Draw UI in Sidebar (Anchored Right)
+        // Sidebar
+        drawGlassPanel(sf::Vector2f(sidebarWidth - 10, viewHeight - 20), sf::Vector2f(sidebarX, 10));
         if (assets.hasFont("main")) {
-            float uiX = sidebarX + 20.0f;
+            float uiX = sidebarX + 15.0f;
             
-            sf::Text scoreLabel("SCORE", assets.getFont("main"), 18);
-            scoreLabel.setPosition(uiX, 10.0f);
-            scoreLabel.setFillColor(sf::Color(150, 150, 150));
-            window.draw(scoreLabel);
-
-            sf::Text scoreText(std::to_string(game.score), assets.getFont("main"), 32);
-            scoreText.setPosition(uiX, 25.0f);
+            // Score Card
+            drawCard("MISSION SCORE", sf::Vector2f(uiX, 20), sf::Vector2f(210, 80));
+            sf::Text scoreText(std::to_string(game.score), assets.getFont("main"), 36);
+            scoreText.setFillColor(UI::NeonGreen);
+            scoreText.setPosition(uiX + 10, 45);
             window.draw(scoreText);
 
-            // Display Current User and Record
-            sf::Text userLabel(userManager.getCurrentUserPseudo(), assets.getFont("main"), 18);
-            userLabel.setPosition(uiX, 65.0f);
-            userLabel.setFillColor(sf::Color(100, 200, 255));
-            window.draw(userLabel);
+            // Player Card
+            drawCard("OPERATOR: " + userManager.getCurrentUserPseudo(), sf::Vector2f(uiX, 110), sf::Vector2f(210, 60));
+            sf::Text recText("BEST: " + std::to_string(userManager.getCurrentUserRecord()), assets.getFont("main"), 16);
+            recText.setPosition(uiX + 10, 140);
+            recText.setFillColor(sf::Color::Yellow);
+            window.draw(recText);
 
-            sf::Text recordText("REC: " + std::to_string(userManager.getCurrentUserRecord()), assets.getFont("main"), 14);
-            recordText.setPosition(uiX, 90.0f);
-            recordText.setFillColor(sf::Color(200, 200, 100));
-            window.draw(recordText);
-
-            // Dynamic Capacity Display
-            float startX = 60.0f;
-            float startY = 60.0f;
-            float spacingX = 60.0f;
-            float spacingY = 80.0f;
-            float boardWidth = sidebarX - startX;
-            int pPerRow = static_cast<int>(boardWidth / spacingX);
+            // Capacity Meter
+            drawCard("CAPACITY", sf::Vector2f(uiX, 180), sf::Vector2f(210, 70));
+            float startX = 60.0f, startY = 60.0f, spacingX = 60.0f, spacingY = 80.0f;
+            int pPerRow = (int)((sidebarX - startX) / spacingX);
             if (pPerRow < 1) pPerRow = 1;
-            int mRows = static_cast<int>((viewHeight - startY - 25.0f) / spacingY) + 1;
-            if (mRows < 1) mRows = 0;
+            int mRows = (int)((viewHeight - startY - 25.0f) / spacingY) + 1;
             int capacity = pPerRow * mRows;
+            
+            sf::RectangleShape barBg(sf::Vector2f(190, 10));
+            barBg.setPosition(uiX + 10, 225);
+            barBg.setFillColor(sf::Color(50, 50, 50));
+            window.draw(barBg);
 
-            sf::Text capLabel("CAPACITY", assets.getFont("main"), 18);
-            capLabel.setPosition(uiX, 120.0f);
-            capLabel.setFillColor(sf::Color(150, 150, 150));
-            window.draw(capLabel);
+            float fillWidth = (capacity > 0) ? (190.0f * game.piecesCount / capacity) : 0;
+            sf::RectangleShape barFill(sf::Vector2f(fillWidth, 10));
+            barFill.setPosition(uiX + 10, 225);
+            sf::Color barColor = UI::NeonGreen;
+            if (game.piecesCount > capacity * 0.8f) barColor = sf::Color::Red;
+            else if (game.piecesCount > capacity * 0.5f) barColor = sf::Color::Yellow;
+            barFill.setFillColor(barColor);
+            window.draw(barFill);
 
-            sf::Text capText(std::to_string(game.piecesCount) + " / " + std::to_string(capacity), assets.getFont("main"), 24);
-            capText.setPosition(uiX, 140.0f);
-            capText.setFillColor(game.piecesCount >= capacity ? sf::Color::Red : sf::Color::White);
-            window.draw(capText);
-
-            sf::Text nextLabel("NEXT PIECE", assets.getFont("main"), 18);
-            nextLabel.setPosition(uiX, 180.0f);
-            nextLabel.setFillColor(sf::Color(150, 150, 150));
-            window.draw(nextLabel);
-
+            // Next Piece
+            drawCard("NEXT DATA", sf::Vector2f(uiX, 260), sf::Vector2f(210, 110));
             if (nextPiece != nullptr) {
-                static float totalTime = 0;
-                totalTime += deltaTime;
-                float scale = 1.0f + 0.1f * std::sin(totalTime * 4.0f);
-                drawPiece(*nextPiece, sidebarX + 100.0f, 240.0f, scale);
+                float pulse = 1.0f + 0.05f * std::sin(totalT * 4.0f);
+                drawFancyPiece(*nextPiece, uiX + 105, 330, pulse * 1.2f);
             }
 
-            drawLeaderboard(uiX, 320.0f);
+            drawLeaderboard(uiX, 380.0f);
 
-            sf::Text hint("J: Left  K: Right\nC: Color S: Shape\nA: About", assets.getFont("main"), 16);
-            hint.setPosition(uiX, viewHeight - 100.0f);
-            hint.setFillColor(sf::Color(100, 100, 100));
-            window.draw(hint);
+            sf::Text hints("J/K: Insert  C/S: Shift\nA: Info  ESC: Pause", assets.getFont("main"), 14);
+            hints.setPosition(uiX + 10, viewHeight - 60.0f);
+            hints.setFillColor(UI::MutedText);
+            window.draw(hints);
         }
 
         if (state == GameState::PAUSED) {
             sf::RectangleShape overlay(sf::Vector2f(viewWidth, viewHeight));
-            overlay.setFillColor(sf::Color(0, 0, 0, 150));
+            overlay.setFillColor(sf::Color(0, 0, 0, 180));
             window.draw(overlay);
-
             if (assets.hasFont("main")) {
-                sf::Text pauseText("PAUSED", assets.getFont("main"), 60);
-                pauseText.setOrigin(pauseText.getLocalBounds().width / 2.0f, pauseText.getLocalBounds().height / 2.0f);
-                pauseText.setPosition(viewWidth / 2.0f, viewHeight / 2.0f);
-                window.draw(pauseText);
-
-                sf::Text hint("Press ESC to Resume", assets.getFont("main"), 20);
-                hint.setOrigin(hint.getLocalBounds().width / 2.0f, 0);
-                hint.setPosition(viewWidth / 2.0f, viewHeight / 2.0f + 50.0f);
-                window.draw(hint);
+                sf::Text pText("SYSTEM PAUSED", assets.getFont("main"), 50);
+                UI::centerText(pText, sf::Vector2f(viewWidth/2, viewHeight/2));
+                window.draw(pText);
             }
         }
-        
-        if (showAbout) {
-            drawAboutPage();
-        }
+        if (showAbout) drawAboutPage();
     }
-
     window.display();
 }
 
-void Renderer::drawLoginScreen() {
-    if (!assets.hasFont("main")) return;
-
-    float centerX = window.getSize().x / 2.0f;
-    float centerY = window.getSize().y / 2.0f;
-
-    // Animated background effect
-    static float time = 0;
-    time += 0.01f;
-    sf::CircleShape bgCircle(300.0f);
-    bgCircle.setOrigin(300.0f, 300.0f);
-    bgCircle.setPosition(centerX + std::sin(time) * 50.0f, centerY + std::cos(time) * 50.0f);
-    bgCircle.setFillColor(sf::Color(0, 255, 150, 15));
-    window.draw(bgCircle);
-
-    sf::Text title("TETRISTE", assets.getFont("main"), 80);
-    title.setOrigin(title.getLocalBounds().width / 2.0f, 0);
-    title.setPosition(centerX, 50.0f);
-    title.setFillColor(sf::Color(0, 255, 150));
-    window.draw(title);
-
-    sf::Text subtitle("MISSION AUTHENTICATION", assets.getFont("main"), 24);
-    subtitle.setOrigin(subtitle.getLocalBounds().width / 2.0f, 0);
-    subtitle.setPosition(centerX, 140.0f);
-    subtitle.setFillColor(sf::Color(100, 100, 150));
-    window.draw(subtitle);
-
-    // Form Background
-    sf::RectangleShape formBg(sf::Vector2f(400.0f, 300.0f));
-    formBg.setOrigin(200.0f, 150.0f);
-    formBg.setPosition(centerX, centerY + 20.0f);
-    formBg.setFillColor(sf::Color(35, 35, 45, 200));
-    formBg.setOutlineThickness(2.0f);
-    formBg.setOutlineColor(sf::Color(0, 255, 150, 100));
-    window.draw(formBg);
-
-    // Input Fields
-    auto drawField = [&](std::string label, std::string value, float y, bool active, bool isPassword) {
-        sf::Text labelText(label, assets.getFont("main"), 16);
-        labelText.setPosition(centerX - 180.0f, y - 25.0f);
-        labelText.setFillColor(sf::Color(150, 150, 150));
-        window.draw(labelText);
-
-        sf::RectangleShape field(sf::Vector2f(360.0f, 40.0f));
-        field.setOrigin(180.0f, 20.0f);
-        field.setPosition(centerX, y);
-        field.setFillColor(sf::Color(20, 20, 30));
-        field.setOutlineThickness(active ? 2.0f : 1.0f);
-        field.setOutlineColor(active ? sf::Color(0, 255, 150) : sf::Color(100, 100, 100));
-        window.draw(field);
-
-        std::string displayVal = isPassword ? std::string(value.length(), '*') : value;
-        if (active && static_cast<int>(cursorBlinkTimer * 2) % 2 == 0) displayVal += "|";
-        
-        sf::Text valText(displayVal, assets.getFont("main"), 20);
-        valText.setPosition(centerX - 170.0f, y - 12.0f);
-        window.draw(valText);
-    };
-
-    drawField("PSEUDO", loginPseudo, centerY - 40.0f, activeLoginField == 0, false);
-    drawField("PASSWORD", loginPassword, centerY + 40.0f, activeLoginField == 1, true);
-
-    sf::Text hint("TAB to switch | ENTER to Login | SHIFT+ENTER to Register", assets.getFont("main"), 14);
-    hint.setOrigin(hint.getLocalBounds().width / 2.0f, 0);
-    hint.setPosition(centerX, centerY + 110.0f);
-    hint.setFillColor(sf::Color(100, 100, 100));
-    window.draw(hint);
-}
-
-void Renderer::handleTextInput(uint32_t unicode) {
-    if (unicode == '\t' || unicode == '\r' || unicode == '\n') return;
-
-    std::string &target = (activeLoginField == 0) ? loginPseudo : loginPassword;
-
-    if (unicode == 8) { // Backspace
-        if (!target.empty()) target.pop_back();
-    } else if (unicode < 128) {
-        if (target.length() < 20) target += static_cast<char>(unicode);
-    }
-}
-
-void Renderer::drawMainMenu() {
-    if (!assets.hasFont("main")) return;
-
-    float centerX = window.getSize().x / 2.0f;
-    float startY = 150.0f;
-
-    sf::Text title("TETRISTE", assets.getFont("main"), 80);
-    title.setOrigin(title.getLocalBounds().width / 2.0f, 0);
-    title.setPosition(centerX, 50.0f);
-    title.setFillColor(sf::Color(0, 255, 150));
-    window.draw(title);
-
-    std::vector<std::string> options = {"PLAY", "RULES", "EXIT"};
-    for (size_t i = 0; i < options.size(); ++i) {
-        sf::Text opt(options[i], assets.getFont("main"), 40);
-        opt.setOrigin(opt.getLocalBounds().width / 2.0f, 0);
-        opt.setPosition(centerX, startY + 100.0f + i * 70.0f);
-        
-        if (static_cast<int>(i) == menuSelection) {
-            opt.setFillColor(sf::Color::Yellow);
-            opt.setScale(1.1f, 1.1f);
-        } else {
-            opt.setFillColor(sf::Color::White);
-        }
-        window.draw(opt);
-    }
-
-    sf::Text user("Logged in as: " + userManager.getCurrentUserPseudo(), assets.getFont("main"), 18);
-    user.setOrigin(user.getLocalBounds().width / 2.0f, 0);
-    user.setPosition(centerX, window.getSize().y - 50.0f);
-    user.setFillColor(sf::Color(150, 150, 150));
-    window.draw(user);
-
-    if (showAbout) {
-        drawAboutPage();
-    }
-}
-
-void Renderer::drawGameOver(int finalScore) {
-    if (!assets.hasFont("main")) return;
-
-    float centerX = window.getSize().x / 2.0f;
-
-    sf::RectangleShape overlay(sf::Vector2f(window.getSize().x, window.getSize().y));
-    overlay.setFillColor(sf::Color(100, 0, 0, 150));
-    window.draw(overlay);
-
-    sf::Text title("GAME OVER", assets.getFont("main"), 72);
-    title.setOrigin(title.getLocalBounds().width / 2.0f, 0);
-    title.setPosition(centerX, 100.0f);
-    title.setFillColor(sf::Color::White);
-    window.draw(title);
-
-    sf::Text score("Final Score: " + std::to_string(finalScore), assets.getFont("main"), 36);
-    score.setOrigin(score.getLocalBounds().width / 2.0f, 0);
-    score.setPosition(centerX, 250.0f);
-    window.draw(score);
-
-    sf::Text record("Personal Best: " + std::to_string(userManager.getCurrentUserRecord()), assets.getFont("main"), 24);
-    record.setOrigin(record.getLocalBounds().width / 2.0f, 0);
-    record.setPosition(centerX, 300.0f);
-    record.setFillColor(sf::Color(255, 215, 0));
-    window.draw(record);
-
-    sf::Text hint("Press SPACE to return to Menu", assets.getFont("main"), 20);
-    hint.setOrigin(hint.getLocalBounds().width / 2.0f, 0);
-    hint.setPosition(centerX, 450.0f);
-    window.draw(hint);
-}
-
-void Renderer::drawLeaderboard(float x, float y) {
-    if (!assets.hasFont("main")) return;
-
-    sf::Text title("TOP 5 RANKING", assets.getFont("main"), 18);
-    title.setPosition(x, y);
-    title.setFillColor(sf::Color(255, 215, 0)); // Gold
-    window.draw(title);
-
-    auto top5 = userManager.getTop5();
-    for (size_t i = 0; i < top5.size(); ++i) {
-        sf::Text rank(std::to_string(i+1) + ". " + top5[i].pseudo, assets.getFont("main"), 14);
-        rank.setPosition(x, y + 30.0f + i * 20.0f);
-        window.draw(rank);
-
-        sf::Text score(std::to_string(top5[i].record), assets.getFont("main"), 14);
-        score.setPosition(x + 130.0f, y + 30.0f + i * 20.0f);
-        score.setFillColor(sf::Color(150, 150, 150));
-        window.draw(score);
-    }
-}
-
-void Renderer::drawAboutPage() {
-    sf::RectangleShape overlay(sf::Vector2f(window.getSize().x, window.getSize().y));
-    overlay.setFillColor(sf::Color(0, 0, 0, 230));
-    window.draw(overlay);
-
-    if (assets.hasFont("main")) {
-        float centerX = window.getSize().x / 2.0f;
-        
-        sf::Text title("TETRISTE: MASTER ALGORITHMICS", assets.getFont("main"), 36);
-        title.setOrigin(title.getLocalBounds().width / 2.0f, 0);
-        title.setPosition(centerX, 50.0f);
-        title.setFillColor(sf::Color(0, 255, 150));
-        window.draw(title);
-
-        sf::Text rules(
-            "PURPOSE:\n"
-            "Master complex data structures & cyclic shifts in C++.\n\n"
-            "CONTROLS:\n"
-            " - J / K: Insert pieces Left or Right\n"
-            " - C / S: Color / Shape Shift (using Next Piece)\n"
-            " - +/-  : Adjust Volume\n"
-            " - ESC  : Pause Game\n"
-            " - A    : Toggle this help screen\n\n"
-            "MECHANICS:\n"
-            "1. Align 3+ pieces of same Color or Shape to clear them.\n"
-            "2. Shifting rotates pieces sharing the Next Piece's trait.\n"
-            "3. Success requires strategic use of triple-linked logic.", 
-            assets.getFont("main"), 20
-        );
-        rules.setOrigin(rules.getLocalBounds().width / 2.0f, 0);
-        rules.setPosition(centerX, 150.0f);
-        window.draw(rules);
-
-        sf::Text close("Press 'A' to return to game", assets.getFont("main"), 18);
-        close.setOrigin(close.getLocalBounds().width / 2.0f, 0);
-        close.setPosition(centerX, window.getSize().y - 100.0f);
-        close.setFillColor(sf::Color(100, 100, 100));
-        window.draw(close);
-    }
-}
-
-void Renderer::addPopup(std::string content, sf::Vector2f position, sf::Color color) {
-    if (!assets.hasFont("main")) return;
-    
-    FloatingText popup;
-    popup.text.setFont(assets.getFont("main"));
-    popup.text.setString(content);
-    popup.text.setCharacterSize(24);
-    popup.text.setFillColor(color);
-    // Center text
-    sf::FloatRect bounds = popup.text.getLocalBounds();
-    popup.text.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
-    popup.text.setPosition(position);
-    
-    popup.lifetime = 1.5f;
-    popup.maxLifetime = 1.5f;
-    popup.velocity = sf::Vector2f(0.0f, -50.0f); // Move upwards
-    
-    popups.push_back(popup);
-}
-
-void Renderer::drawPiece(Piece &piece, float x, float y, float scale) {
+void Renderer::drawFancyPiece(Piece &piece, float x, float y, float scale) {
     std::string texName = getTextureName(piece.color, piece.shape);
+    if (!assets.hasTexture(texName)) return;
+    
     sf::Sprite sprite(assets.getTexture(texName));
-    
-    sf::FloatRect bounds = sprite.getLocalBounds();
-    sprite.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
-    
+    sf::FloatRect b = sprite.getLocalBounds();
+    sprite.setOrigin(b.width/2, b.height/2);
     sprite.setPosition(x, y);
+    sprite.setScale(scale, scale);
+
+    // Subtle Outer Glow (Additive)
+    sprite.setColor(sf::Color(255, 255, 255, 100));
+    sprite.setScale(scale * 1.15f, scale * 1.15f);
+    window.draw(sprite, sf::BlendAdd);
+
+    // Main Draw
+    sprite.setColor(sf::Color::White);
     sprite.setScale(scale, scale);
     window.draw(sprite);
 }
 
-std::string Renderer::getTextureName(T_Color color, T_Shape shape) {
-    std::string c, s;
-    switch(color) {
-        case T_Color::BLUE: c = "blue"; break;
-        case T_Color::YELLOW: c = "yellow"; break;
-        case T_Color::RED: c = "red"; break;
-        case T_Color::GREEN: c = "green"; break;
-        case T_Color::WHITE: c = "white"; break;
+void Renderer::drawCard(const std::string& title, sf::Vector2f pos, sf::Vector2f size) {
+    sf::RectangleShape card = UI::createPanel(size, pos);
+    card.setOutlineColor(sf::Color(UI::NeonGreen.r, UI::NeonGreen.g, UI::NeonGreen.b, 60));
+    window.draw(card);
+
+    if (assets.hasFont("main")) {
+        sf::Text t(title, assets.getFont("main"), 12);
+        t.setPosition(pos.x + 10, pos.y + 5);
+        t.setFillColor(UI::NeonGreen);
+        window.draw(t);
     }
-    switch(shape) {
-        case T_Shape::SQUARE: s = "square"; break;
-        case T_Shape::DIAMOND: s = "diamond"; break;
-        case T_Shape::CIRCLE: s = "circle"; break;
-        case T_Shape::TRIANGLE: s = "triangle"; break;
-        case T_Shape::STAR: s = "star"; break;
+}
+
+void Renderer::drawGlassPanel(sf::Vector2f size, sf::Vector2f pos) {
+    sf::RectangleShape p = UI::createPanel(size, pos);
+    window.draw(p);
+}
+
+void Renderer::drawLoginScreen() {
+    if (!assets.hasFont("main")) return;
+    float cx = window.getSize().x / 2.0f, cy = window.getSize().y / 2.0f;
+
+    sf::Text title("TETRISTE", assets.getFont("main"), 90);
+    title.setFillColor(UI::NeonGreen);
+    UI::centerText(title, sf::Vector2f(cx, 100));
+    window.draw(title);
+
+    drawGlassPanel(sf::Vector2f(420, 320), sf::Vector2f(cx - 210, cy - 140));
+    
+    auto drawIn = [&](std::string lbl, std::string val, float y, bool active, bool isPw) {
+        sf::Text lText(lbl, assets.getFont("main"), 14);
+        lText.setPosition(cx - 190, y - 30);
+        lText.setFillColor(UI::MutedText);
+        window.draw(lText);
+
+        sf::RectangleShape box(sf::Vector2f(380, 45));
+        box.setPosition(cx - 190, y - 5);
+        box.setFillColor(sf::Color(10, 10, 20));
+        box.setOutlineThickness(active ? 2.0f : 1.0f);
+        box.setOutlineColor(active ? UI::NeonGreen : sf::Color(80, 80, 90));
+        window.draw(box);
+
+        std::string disp = isPw ? std::string(val.length(), '*') : val;
+        if (active && (int)(cursorBlinkTimer * 2) % 2 == 0) disp += "_";
+        sf::Text vText(disp, assets.getFont("main"), 22);
+        vText.setPosition(cx - 180, y + 2);
+        window.draw(vText);
+    };
+
+    drawIn("SECURITY_ID (PSEUDO)", loginPseudo, cy - 50, activeLoginField == 0, false);
+    drawIn("ACCESS_CODE (PASSWORD)", loginPassword, cy + 40, activeLoginField == 1, true);
+
+    sf::Text h("TAB: Switch | ENTER: Login | SHIFT+ENTER: Register", assets.getFont("main"), 14);
+    UI::centerText(h, sf::Vector2f(cx, cy + 130));
+    h.setFillColor(UI::MutedText);
+    window.draw(h);
+}
+
+void Renderer::handleTextInput(uint32_t uni) {
+    if (uni == '\t' || uni == '\r' || uni == '\n') return;
+    std::string &t = (activeLoginField == 0) ? loginPseudo : loginPassword;
+    if (uni == 8) { if (!t.empty()) t.pop_back(); }
+    else if (uni < 128 && t.length() < 16) t += (char)uni;
+}
+
+void Renderer::drawMainMenu() {
+    if (!assets.hasFont("main")) return;
+    float cx = window.getSize().x / 2.0f;
+    
+    sf::Text title("TETRISTE", assets.getFont("main"), 90);
+    title.setFillColor(UI::NeonGreen);
+    UI::centerText(title, sf::Vector2f(cx, 100));
+    window.draw(title);
+
+    std::vector<std::string> opts = {"ESTABLISH LINK (PLAY)", "PROTOCOLS (RULES)", "TERMINATE (EXIT)"};
+    for (int i = 0; i < 3; ++i) {
+        sf::Text t(opts[i], assets.getFont("main"), 30);
+        UI::centerText(t, sf::Vector2f(cx, 280 + i * 80));
+        if (i == menuSelection) {
+            t.setFillColor(sf::Color::Yellow);
+            t.setScale(1.1f, 1.1f);
+        } else t.setFillColor(sf::Color::White);
+        window.draw(t);
     }
-    return c + "_" + s;
+    if (showAbout) drawAboutPage();
+}
+
+void Renderer::drawGameOver(int s) {
+    float cx = window.getSize().x/2.0f;
+    sf::RectangleShape bg(sf::Vector2f(window.getSize().x, window.getSize().y));
+    bg.setFillColor(sf::Color(50, 0, 0, 200));
+    window.draw(bg);
+
+    sf::Text t("CONNECTION LOST", assets.getFont("main"), 60);
+    t.setFillColor(sf::Color::Red);
+    UI::centerText(t, sf::Vector2f(cx, 150));
+    window.draw(t);
+
+    sf::Text sc("FINAL_SCORE: " + std::to_string(s), assets.getFont("main"), 30);
+    UI::centerText(sc, sf::Vector2f(cx, 250));
+    window.draw(sc);
+
+    sf::Text h("PRESS SPACE TO RESET", assets.getFont("main"), 20);
+    UI::centerText(h, sf::Vector2f(cx, 450));
+    window.draw(h);
+}
+
+void Renderer::drawLeaderboard(float x, float y) {
+    drawCard("ELITE OPERATORS", sf::Vector2f(x, y), sf::Vector2f(210, 160));
+    auto top = userManager.getTop5();
+    for (size_t i = 0; i < top.size(); ++i) {
+        sf::Text r(std::to_string(i+1) + ". " + top[i].pseudo, assets.getFont("main"), 14);
+        r.setPosition(x + 10, y + 30 + i * 24);
+        window.draw(r);
+        sf::Text s(std::to_string(top[i].record), assets.getFont("main"), 14);
+        s.setPosition(x + 150, y + 30 + i * 24);
+        s.setFillColor(UI::MutedText);
+        window.draw(s);
+    }
+}
+
+void Renderer::drawAboutPage() {
+    sf::RectangleShape ov(sf::Vector2f(window.getSize().x, window.getSize().y));
+    ov.setFillColor(sf::Color(5, 10, 20, 245));
+    window.draw(ov);
+
+    float cx = window.getSize().x / 2.0f;
+    sf::Text t("SYSTEM PROTOCOLS", assets.getFont("main"), 40);
+    t.setFillColor(UI::NeonGreen);
+    UI::centerText(t, sf::Vector2f(cx, 80));
+    window.draw(t);
+
+    std::string txt = "1. ALIGN 3+ MATCHING NODES (COLOR/SHAPE) TO PURGE\n"
+                      "2. INSERTION: [J] LEFT | [K] RIGHT\n"
+                      "3. SHIFTING: [C] COLOR | [S] SHAPE (USES NEXT NODE)\n"
+                      "4. VOLUME: [+] INCREASE | [-] DECREASE\n\n"
+                      "TRIPLE-LINKED LOGIC IS REQUIRED FOR SUPREMACY.";
+    sf::Text r(txt, assets.getFont("main"), 18);
+    UI::centerText(r, sf::Vector2f(cx, 250));
+    window.draw(r);
+
+    sf::Text cl("PRESS 'A' TO ACKNOWLEDGE", assets.getFont("main"), 20);
+    UI::centerText(cl, sf::Vector2f(cx, 500));
+    cl.setFillColor(UI::MutedText);
+    window.draw(cl);
+}
+
+void Renderer::addPopup(std::string c, sf::Vector2f p, sf::Color clr) {
+    if (!assets.hasFont("main")) return;
+    FloatingText pop;
+    pop.text.setFont(assets.getFont("main"));
+    pop.text.setString(c);
+    pop.text.setCharacterSize(28);
+    pop.text.setFillColor(clr);
+    UI::centerText(pop.text, p);
+    pop.lifetime = pop.maxLifetime = 1.2f;
+    pop.velocity = sf::Vector2f(0, -60);
+    popups.push_back(pop);
+}
+
+void Renderer::drawPiece(Piece &p, float x, float y, float s) { drawFancyPiece(p, x, y, s); }
+
+std::string Renderer::getTextureName(T_Color c, T_Shape s) {
+    std::string cs, ss;
+    switch(c) { case T_Color::BLUE: cs = "blue"; break; case T_Color::YELLOW: cs = "yellow"; break; case T_Color::RED: cs = "red"; break; case T_Color::GREEN: cs = "green"; break; case T_Color::WHITE: cs = "white"; break; }
+    switch(s) { case T_Shape::SQUARE: ss = "square"; break; case T_Shape::DIAMOND: ss = "diamond"; break; case T_Shape::CIRCLE: ss = "circle"; break; case T_Shape::TRIANGLE: ss = "triangle"; break; case T_Shape::STAR: ss = "star"; break; }
+    return cs + "_" + ss;
 }
