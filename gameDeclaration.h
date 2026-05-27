@@ -13,6 +13,7 @@ public:
     Piece *head;
     std::vector<std::unique_ptr<Piece>> ownedPieces;
     int score;
+    int globalComboMultiplier;
 
     int piecesCount;
     int colorIndex;

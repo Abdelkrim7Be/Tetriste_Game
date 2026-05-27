@@ -27,6 +27,19 @@ namespace UI {
         text.setOrigin(bounds.left + bounds.width / 2.0f, bounds.top + bounds.height / 2.0f);
         text.setPosition(pos);
     }
+
+    inline float lerp(float a, float b, float t) {
+        return a + (b - a) * t;
+    }
+
+    inline sf::Color lerpColor(sf::Color a, sf::Color b, float t) {
+        return sf::Color(
+            (sf::Uint8)lerp(a.r, b.r, t),
+            (sf::Uint8)lerp(a.g, b.g, t),
+            (sf::Uint8)lerp(a.b, b.b, t),
+            (sf::Uint8)lerp(a.a, b.b, t)
+        );
+    }
 }
 
 #endif

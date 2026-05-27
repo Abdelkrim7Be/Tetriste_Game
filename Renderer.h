@@ -33,6 +33,7 @@ public:
     void toggleAbout() { showAbout = !showAbout; }
     void setMenuSelection(int index) { menuSelection = index; }
     int getMenuSelection() const { return menuSelection; }
+    void triggerInsertionEffect() { insertionTimer = 0.4f; }
 
     // Login Input handling
     void handleTextInput(uint32_t unicode);
@@ -51,7 +52,7 @@ private:
     
     // UI Helpers
     void drawCard(const std::string& title, sf::Vector2f pos, sf::Vector2f size);
-    void drawFancyPiece(Piece &piece, float x, float y, float scale = 1.0f);
+    void drawFancyPiece(Piece &piece, float x, float y, float scale = 1.0f, bool highlight = false);
     void drawGlassPanel(sf::Vector2f size, sf::Vector2f pos);
 
     // Login UI State
@@ -69,6 +70,8 @@ private:
     std::string getTextureName(T_Color color, T_Shape shape);
 
     sf::Clock clock;
+    float totalTime = 0.0f;
+    float insertionTimer = 0.0f;
     std::vector<FloatingText> popups;
 };
 

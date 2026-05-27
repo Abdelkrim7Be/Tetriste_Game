@@ -75,9 +75,9 @@ void handlePlayingInput(sf::Event& event, sf::RenderWindow& window, GameState& s
     int dynamicCapacity = piecesPerRow * maxRows;
     bool actionTaken = false; bool shifted = false;
     if (event.key.code == sf::Keyboard::J) {
-        if (nextPiece != nullptr) { if (currentGame->piecesCount < dynamicCapacity) { if (currentGame->insertPieceInLeft(currentGame, nextPiece)) actionTaken = true; } else { state = GameState::GAME_OVER; userManager.updateRecord(currentGame->score); } }
+        if (nextPiece != nullptr) { if (currentGame->piecesCount < dynamicCapacity) { if (currentGame->insertPieceInLeft(currentGame, nextPiece)) { actionTaken = true; renderer.triggerInsertionEffect(); } } else { state = GameState::GAME_OVER; userManager.updateRecord(currentGame->score); } }
     } else if (event.key.code == sf::Keyboard::K) {
-        if (nextPiece != nullptr) { if (currentGame->piecesCount < dynamicCapacity) { if (currentGame->insertPieceInRight(currentGame, nextPiece)) actionTaken = true; } else { state = GameState::GAME_OVER; userManager.updateRecord(currentGame->score); } }
+        if (nextPiece != nullptr) { if (currentGame->piecesCount < dynamicCapacity) { if (currentGame->insertPieceInRight(currentGame, nextPiece)) { actionTaken = true; renderer.triggerInsertionEffect(); } } else { state = GameState::GAME_OVER; userManager.updateRecord(currentGame->score); } }
     } else if (event.key.code == sf::Keyboard::C) { if (nextPiece != nullptr) { currentGame->colorShifting(currentGame, nextPiece->color, 0); shifted = true; }
     } else if (event.key.code == sf::Keyboard::S) { if (nextPiece != nullptr) { currentGame->shapeShifting(currentGame, nextPiece->shape, 0); shifted = true; } }
     if (actionTaken && currentGame->piecesCount > 0) {
@@ -85,7 +85,13 @@ void handlePlayingInput(sf::Event& event, sf::RenderWindow& window, GameState& s
         int scoreChange = currentGame->updateGame(currentGame);
         if (scoreChange > 0) {
             if (assets.hasSoundBuffer("match")) { sound.setBuffer(assets.getSoundBuffer("match")); sound.setVolume(assets.getVolume()); sound.play(); }
-            renderer.addPopup("+" + std::to_string(scoreChange), sf::Vector2f(window.getSize().x / 2.0f, 100.0f)); userManager.updateRecord(currentGame->score);
+            std::string popupText = "+" + std::to_string(scoreChange);
+            if (currentGame->globalComboMultiplier > 1) popupText += " (COMBO x" + std::to_string(currentGame->globalComboMultiplier) + "!)";
+            renderer.addPopup(popupText, sf::Vector2f(window.getSize().x / 2.0f, 100.0f)); 
+            userManager.updateRecord(currentGame->score);
+            currentGame->globalComboMultiplier++;
+        } else {
+            currentGame->globalComboMultiplier = 1;
         }
         if (currentGame->piecesCount == 0) renderer.addPopup("BOARD CLEARED!", sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f), sf::Color::Green);
         nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);

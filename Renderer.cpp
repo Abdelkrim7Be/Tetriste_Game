@@ -9,7 +9,9 @@ Renderer::Renderer(sf::RenderWindow &win, AssetManager &asmgr, UserManager &umgr
 
 void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
     float deltaTime = clock.restart().asSeconds();
+    totalTime += deltaTime;
     cursorBlinkTimer += deltaTime;
+    if (insertionTimer > 0) insertionTimer -= deltaTime;
     window.clear(UI::DeepNavy); 
     
     if (state == GameState::LOGIN) {
@@ -39,8 +41,7 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
         }
 
         // Play area border pulse
-        static float totalT = 0; totalT += deltaTime;
-        float alpha = 100 + 50 * std::sin(totalT * 2.0f);
+        float alpha = 100 + 50 * std::sin(totalTime * 2.0f);
         sf::RectangleShape border(sf::Vector2f(sidebarX - 20.0f, viewHeight - 20.0f));
         border.setPosition(10.0f, 10.0f);
         border.setFillColor(sf::Color::Transparent);
@@ -56,8 +57,12 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
             float spacingX = 60.0f, spacingY = 80.0f;
             int count = 0;
 
+            float punch = 1.0f;
+            if (insertionTimer > 0) punch = 1.0f + 0.15f * (insertionTimer / 0.4f);
+
             do {
-                drawFancyPiece(*current, currentX, currentY);
+                bool isTarget = (nextPiece != nullptr) && (current->color == nextPiece->color || current->shape == nextPiece->shape);
+                drawFancyPiece(*current, currentX, currentY, punch, isTarget);
                 current = current->nextPiece;
                 count++;
                 currentX += spacingX;
@@ -126,8 +131,8 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
             // Next Piece
             drawCard("NEXT DATA", sf::Vector2f(uiX, 260), sf::Vector2f(210, 110));
             if (nextPiece != nullptr) {
-                float pulse = 1.0f + 0.05f * std::sin(totalT * 4.0f);
-                drawFancyPiece(*nextPiece, uiX + 105, 330, pulse * 1.2f);
+                float pulse = 1.0f + 0.05f * std::sin(totalTime * 4.0f);
+                drawFancyPiece(*nextPiece, uiX + 105, 330, pulse * 1.2f, false);
             }
 
             drawLeaderboard(uiX, 380.0f);
@@ -153,7 +158,7 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
     window.display();
 }
 
-void Renderer::drawFancyPiece(Piece &piece, float x, float y, float scale) {
+void Renderer::drawFancyPiece(Piece &piece, float x, float y, float scale, bool highlight) {
     std::string texName = getTextureName(piece.color, piece.shape);
     if (!assets.hasTexture(texName)) return;
     
@@ -161,16 +166,21 @@ void Renderer::drawFancyPiece(Piece &piece, float x, float y, float scale) {
     sf::FloatRect b = sprite.getLocalBounds();
     sprite.setOrigin(b.width/2, b.height/2);
     sprite.setPosition(x, y);
-    sprite.setScale(scale, scale);
+
+    // If highlighted, pulse scale slightly and increase outer glow
+    float pulse = highlight ? 1.0f + 0.1f * std::sin(totalTime * 6.0f) : 1.0f;
+    float finalScale = scale * pulse;
+    sprite.setScale(finalScale, finalScale);
 
     // Subtle Outer Glow (Additive)
-    sprite.setColor(sf::Color(255, 255, 255, 100));
-    sprite.setScale(scale * 1.15f, scale * 1.15f);
+    int glowAlpha = highlight ? 180 : 100;
+    sprite.setColor(sf::Color(255, 255, 255, glowAlpha));
+    sprite.setScale(finalScale * 1.15f, finalScale * 1.15f);
     window.draw(sprite, sf::BlendAdd);
 
     // Main Draw
     sprite.setColor(sf::Color::White);
-    sprite.setScale(scale, scale);
+    sprite.setScale(finalScale, finalScale);
     window.draw(sprite);
 }
 
@@ -253,8 +263,9 @@ void Renderer::drawMainMenu() {
         sf::Text t(opts[i], assets.getFont("main"), 30);
         UI::centerText(t, sf::Vector2f(cx, 280 + i * 80));
         if (i == menuSelection) {
+            float pulse = 1.0f + 0.05f * std::sin(totalTime * 5.0f);
             t.setFillColor(sf::Color::Yellow);
-            t.setScale(1.1f, 1.1f);
+            t.setScale(pulse, pulse);
         } else t.setFillColor(sf::Color::White);
         window.draw(t);
     }
@@ -334,7 +345,7 @@ void Renderer::addPopup(std::string c, sf::Vector2f p, sf::Color clr) {
     popups.push_back(pop);
 }
 
-void Renderer::drawPiece(Piece &p, float x, float y, float s) { drawFancyPiece(p, x, y, s); }
+void Renderer::drawPiece(Piece &p, float x, float y, float s) { drawFancyPiece(p, x, y, s, false); }
 
 std::string Renderer::getTextureName(T_Color c, T_Shape s) {
     std::string cs, ss;
