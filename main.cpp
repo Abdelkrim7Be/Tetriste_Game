@@ -90,14 +90,23 @@ void generatePlaceholderAudio(AssetManager& assets) {
 }
 
 void initializeNewGame(Game*& currentGame, Piece*& nextPiece) {
-    if (currentGame) delete currentGame;
-    if (nextPiece) delete nextPiece;
+    std::cout << "DEBUG: Initializing new game..." << std::endl;
+    if (currentGame) {
+        delete currentGame;
+        currentGame = nullptr;
+    }
+    // nextPiece was owned by the old currentGame or is a loose piece from drawPiece
+    // If it was from drawPiece(rand, rand) and not inserted, it's a leak or belongs to the game
+    // For simplicity, let's assume initializeGame handles its own pieces.
+    nextPiece = nullptr; 
+
     currentGame = Game(0,0).initializeGame(rand() % 5, rand() % 5);
     for (int i = 0; i < 5; ++i) {
         Piece *p = currentGame->drawPiece(rand() % 5, rand() % 5);
         currentGame->insertPieceInRight(currentGame, p);
     }
     nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
+    std::cout << "DEBUG: New game initialized. piecesCount=" << currentGame->piecesCount << std::endl;
 }
 
 void handlePlayingInput(sf::Event& event, sf::RenderWindow& window, GameState& state, Game* currentGame, Piece*& nextPiece, Renderer& renderer, AssetManager& assets, UserManager& userManager, sf::Sound& sound, sf::Sound& music) {

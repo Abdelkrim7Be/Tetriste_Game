@@ -26,6 +26,8 @@ Game* Game::initializeGame(int colorIndex, int shapeIndex)
 {
     Game *newGame = new Game(colorIndex, shapeIndex);
     Piece *newPiece = newGame->drawPiece(colorIndex, shapeIndex);
+    
+    // Core structural invariant: even with 1 piece, it points to itself
     newPiece->nextPiece = newPiece;
     newPiece->shapePrev = newPiece;
     newPiece->shapeNext = newPiece;
@@ -40,10 +42,9 @@ Game* Game::initializeGame(int colorIndex, int shapeIndex)
 
 Piece* Game::drawPiece(int colorIndex, int shapeIndex)
 {
-    auto piece = std::unique_ptr<Piece>(new Piece(static_cast<T_Color>(colorIndex), static_cast<T_Shape>(shapeIndex), nullptr, nullptr, nullptr, nullptr, nullptr));
-    Piece* ptr = piece.get();
-    ownedPieces.push_back(std::move(piece));
-    return ptr;
+    // Important: Ownership is held by the vector. We return a weak raw pointer for use.
+    ownedPieces.emplace_back(new Piece(static_cast<T_Color>(colorIndex), static_cast<T_Shape>(shapeIndex), nullptr, nullptr, nullptr, nullptr, nullptr));
+    return ownedPieces.back().get();
 }
 
 Piece* Game::retrieveTail(Game *game)
