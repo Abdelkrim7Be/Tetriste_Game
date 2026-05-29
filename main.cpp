@@ -47,6 +47,48 @@ void generatePlaceholderAssets(AssetManager& assets) {
     }
 }
 
+void generatePlaceholderAudio(AssetManager& assets) {
+    auto createTone = [](float freq, float duration, float volume = 0.5f) {
+        const unsigned int sampleRate = 44100;
+        const unsigned int sampleCount = static_cast<unsigned int>(sampleRate * duration);
+        std::vector<sf::Int16> samples(sampleCount);
+        for (unsigned int i = 0; i < sampleCount; ++i) {
+            float t = static_cast<float>(i) / sampleRate;
+            // Sine wave with basic envelope
+            float envelope = 1.0f;
+            if (t < 0.01f) envelope = t / 0.01f;
+            if (t > duration - 0.05f) envelope = (duration - t) / 0.05f;
+            samples[i] = static_cast<sf::Int16>(32767 * volume * envelope * std::sin(2 * 3.14159f * freq * t));
+        }
+        sf::SoundBuffer buffer;
+        buffer.loadFromSamples(&samples[0], sampleCount, 1, sampleRate);
+        return buffer;
+    };
+
+    assets.addSoundBuffer("place", createTone(440.0f, 0.1f, 0.3f));  // A4
+    assets.addSoundBuffer("match", createTone(880.0f, 0.2f, 0.4f));  // A5
+    assets.addSoundBuffer("shift", createTone(220.0f, 0.15f, 0.3f)); // A3
+
+    // Background Music (4-note melody loop)
+    const unsigned int sampleRate = 44100;
+    const float duration = 4.0f; // 4 seconds loop
+    const unsigned int sampleCount = static_cast<unsigned int>(sampleRate * duration);
+    std::vector<sf::Int16> samples(sampleCount, 0);
+    float freqs[] = { 261.63f, 329.63f, 392.00f, 349.23f }; // C4, E4, G4, F4
+    for (int n = 0; n < 4; ++n) {
+        float startTime = n * 1.0f;
+        for (unsigned int i = static_cast<unsigned int>(startTime * sampleRate); i < (n+1) * sampleRate; ++i) {
+            float t = static_cast<float>(i) / sampleRate;
+            float localT = t - startTime;
+            float envelope = std::exp(-3.0f * localT); // Plucky sound
+            samples[i] = static_cast<sf::Int16>(10000 * envelope * std::sin(2 * 3.14159f * freqs[n] * t));
+        }
+    }
+    sf::SoundBuffer musicBuffer;
+    musicBuffer.loadFromSamples(&samples[0], sampleCount, 1, sampleRate);
+    assets.addSoundBuffer("music", musicBuffer);
+}
+
 void initializeNewGame(Game*& currentGame, Piece*& nextPiece) {
     if (currentGame) delete currentGame;
     if (nextPiece) delete nextPiece;
@@ -78,8 +120,8 @@ void handlePlayingInput(sf::Event& event, sf::RenderWindow& window, GameState& s
         if (nextPiece != nullptr) { if (currentGame->piecesCount < dynamicCapacity) { if (currentGame->insertPieceInLeft(currentGame, nextPiece)) { actionTaken = true; renderer.triggerInsertionEffect(); } } else { state = GameState::GAME_OVER; userManager.updateRecord(currentGame->score); } }
     } else if (event.key.code == sf::Keyboard::K) {
         if (nextPiece != nullptr) { if (currentGame->piecesCount < dynamicCapacity) { if (currentGame->insertPieceInRight(currentGame, nextPiece)) { actionTaken = true; renderer.triggerInsertionEffect(); } } else { state = GameState::GAME_OVER; userManager.updateRecord(currentGame->score); } }
-    } else if (event.key.code == sf::Keyboard::C) { if (nextPiece != nullptr) { currentGame->colorShifting(currentGame, nextPiece->color, 0); shifted = true; }
-    } else if (event.key.code == sf::Keyboard::S) { if (nextPiece != nullptr) { currentGame->shapeShifting(currentGame, nextPiece->shape, 0); shifted = true; } }
+    } else if (event.key.code == sf::Keyboard::C) { if (nextPiece != nullptr) { currentGame->colorShifting(currentGame, nextPiece->color, 0); shifted = true; renderer.triggerFlash(); }
+    } else if (event.key.code == sf::Keyboard::S) { if (nextPiece != nullptr) { currentGame->shapeShifting(currentGame, nextPiece->shape, 0); shifted = true; renderer.triggerFlash(); } }
     if (actionTaken && currentGame->piecesCount > 0) {
         if (assets.hasSoundBuffer("place")) { sound.setBuffer(assets.getSoundBuffer("place")); sound.setVolume(assets.getVolume()); sound.play(); }
         int scoreChange = currentGame->updateGame(currentGame);
@@ -93,7 +135,10 @@ void handlePlayingInput(sf::Event& event, sf::RenderWindow& window, GameState& s
         } else {
             currentGame->globalComboMultiplier = 1;
         }
-        if (currentGame->piecesCount == 0) renderer.addPopup("BOARD CLEARED!", sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f), sf::Color::Green);
+        if (currentGame->piecesCount == 0) { 
+            renderer.addPopup("BOARD CLEARED!", sf::Vector2f(window.getSize().x / 2.0f, window.getSize().y / 2.0f), sf::Color::Green);
+            renderer.triggerFlash();
+        }
         nextPiece = currentGame->drawPiece(rand() % 5, rand() % 5);
     }
     if (shifted && assets.hasSoundBuffer("shift")) { sound.setBuffer(assets.getSoundBuffer("shift")); sound.setVolume(assets.getVolume()); sound.play(); }
@@ -111,6 +156,7 @@ int main() {
     system("mkdir -p assets");
 #endif
     generatePlaceholderAssets(assets);
+    generatePlaceholderAudio(assets);
     std::vector<std::string> fontPaths = { "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf", "/usr/share/fonts/liberation/LiberationSans-Regular.ttf", "C:\\Windows\\Fonts\\arial.ttf", "assets/font.ttf" };
     bool fontLoaded = false;
     for (const auto& path : fontPaths) { if (assets.loadFont("main", path)) { fontLoaded = true; break; } }
@@ -126,15 +172,13 @@ int main() {
             if (event.type == sf::Event::TextEntered && state == GameState::LOGIN) renderer.handleTextInput(event.text.unicode);
             if (event.type == sf::Event::KeyPressed) {
                 if (state == GameState::LOGIN) {
-                    if (event.key.code == sf::Keyboard::Tab) renderer.switchLoginField();
-                    else if (event.key.code == sf::Keyboard::Enter) {
-                        std::string p = renderer.getLoginPseudo(), pw = renderer.getLoginPassword();
-                        if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
-                            if (userManager.registerUser(p, pw)) renderer.addPopup("Registered! Please login", sf::Vector2f(400, 500), sf::Color::Green);
-                            else renderer.addPopup("Pseudo taken!", sf::Vector2f(400, 500), sf::Color::Red);
+                    if (event.key.code == sf::Keyboard::Enter) {
+                        std::string p = renderer.getLoginPseudo();
+                        if (userManager.loginOrCreate(p)) { 
+                            state = GameState::MENU; 
+                            renderer.addPopup("Welcome, " + p + "!", sf::Vector2f(400, 300), sf::Color::Cyan); 
                         } else {
-                            if (userManager.login(p, pw)) { state = GameState::MENU; renderer.addPopup("Welcome, " + p + "!", sf::Vector2f(400, 300), sf::Color::Cyan); }
-                            else renderer.addPopup("Invalid Credentials", sf::Vector2f(400, 500), sf::Color::Red);
+                            renderer.addPopup("Invalid Pseudo (Alpha-numeric, max 15)", sf::Vector2f(400, 500), sf::Color::Red);
                         }
                     }
                 } else if (state == GameState::MENU) {

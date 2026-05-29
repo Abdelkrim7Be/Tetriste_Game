@@ -12,6 +12,7 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
     totalTime += deltaTime;
     cursorBlinkTimer += deltaTime;
     if (insertionTimer > 0) insertionTimer -= deltaTime;
+    if (flashTimer > 0) flashTimer -= deltaTime;
     window.clear(UI::DeepNavy); 
     
     if (state == GameState::LOGIN) {
@@ -155,6 +156,13 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
         }
         if (showAbout) drawAboutPage();
     }
+
+    if (flashTimer > 0) {
+        sf::RectangleShape flash(sf::Vector2f(window.getSize().x, window.getSize().y));
+        flash.setFillColor(sf::Color(255, 255, 255, (sf::Uint8)(100 * (flashTimer / 0.2f))));
+        window.draw(flash);
+    }
+
     window.display();
 }
 
@@ -213,7 +221,7 @@ void Renderer::drawLoginScreen() {
 
     drawGlassPanel(sf::Vector2f(420, 320), sf::Vector2f(cx - 210, cy - 140));
     
-    auto drawIn = [&](std::string lbl, std::string val, float y, bool active, bool isPw) {
+    auto drawIn = [&](std::string lbl, std::string val, float y, bool active) {
         sf::Text lText(lbl, assets.getFont("main"), 14);
         lText.setPosition(cx - 190, y - 30);
         lText.setFillColor(UI::MutedText);
@@ -226,27 +234,24 @@ void Renderer::drawLoginScreen() {
         box.setOutlineColor(active ? UI::NeonGreen : sf::Color(80, 80, 90));
         window.draw(box);
 
-        std::string disp = isPw ? std::string(val.length(), '*') : val;
-        if (active && (int)(cursorBlinkTimer * 2) % 2 == 0) disp += "_";
-        sf::Text vText(disp, assets.getFont("main"), 22);
+        if (active && (int)(cursorBlinkTimer * 2) % 2 == 0) val += "_";
+        sf::Text vText(val, assets.getFont("main"), 22);
         vText.setPosition(cx - 180, y + 2);
         window.draw(vText);
     };
 
-    drawIn("SECURITY_ID (PSEUDO)", loginPseudo, cy - 50, activeLoginField == 0, false);
-    drawIn("ACCESS_CODE (PASSWORD)", loginPassword, cy + 40, activeLoginField == 1, true);
+    drawIn("OPERATOR_ID (PSEUDO)", loginPseudo, cy - 20, true);
 
-    sf::Text h("TAB: Switch | ENTER: Login | SHIFT+ENTER: Register", assets.getFont("main"), 14);
-    UI::centerText(h, sf::Vector2f(cx, cy + 130));
+    sf::Text h("ENTER: Start Session", assets.getFont("main"), 14);
+    UI::centerText(h, sf::Vector2f(cx, cy + 80));
     h.setFillColor(UI::MutedText);
     window.draw(h);
 }
 
 void Renderer::handleTextInput(uint32_t uni) {
     if (uni == '\t' || uni == '\r' || uni == '\n') return;
-    std::string &t = (activeLoginField == 0) ? loginPseudo : loginPassword;
-    if (uni == 8) { if (!t.empty()) t.pop_back(); }
-    else if (uni < 128 && t.length() < 16) t += (char)uni;
+    if (uni == 8) { if (!loginPseudo.empty()) loginPseudo.pop_back(); }
+    else if (uni < 128 && loginPseudo.length() < 16) loginPseudo += (char)uni;
 }
 
 void Renderer::drawMainMenu() {

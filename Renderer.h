@@ -34,13 +34,12 @@ public:
     void setMenuSelection(int index) { menuSelection = index; }
     int getMenuSelection() const { return menuSelection; }
     void triggerInsertionEffect() { insertionTimer = 0.4f; }
+    void triggerFlash() { flashTimer = 0.2f; }
 
     // Login Input handling
     void handleTextInput(uint32_t unicode);
-    void switchLoginField() { activeLoginField = (activeLoginField + 1) % 2; }
     std::string getLoginPseudo() const { return loginPseudo; }
-    std::string getLoginPassword() const { return loginPassword; }
-    void clearLoginFields() { loginPseudo = ""; loginPassword = ""; }
+    void clearLoginField() { loginPseudo = ""; }
 
 private:
     sf::RenderWindow &window;
@@ -57,8 +56,6 @@ private:
 
     // Login UI State
     std::string loginPseudo;
-    std::string loginPassword;
-    int activeLoginField = 0; // 0: Pseudo, 1: Password
     float cursorBlinkTimer = 0;
 
     void drawLoginScreen();
@@ -72,6 +69,7 @@ private:
     sf::Clock clock;
     float totalTime = 0.0f;
     float insertionTimer = 0.0f;
+    float flashTimer = 0.0f;
     std::vector<FloatingText> popups;
 };
 
