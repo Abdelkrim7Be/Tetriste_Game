@@ -11,6 +11,7 @@ Game::Game(int colorIndex, int shapeIndex)
     this->piecesCount = 0;
     this->colorIndex = colorIndex;
     this->shapeIndex = shapeIndex;
+    this->nodesPurgedInLastUpdate = 0;
 }
 
 Game::~Game()
@@ -151,6 +152,7 @@ int Game::updateGame(Game *game)
     if (game->piecesCount < 3) return 0;
     int initialScore = game->score;
     int combo = 0;
+    game->nodesPurgedInLastUpdate = 0;
 
     bool matchFound;
     do {
@@ -168,6 +170,7 @@ int Game::updateGame(Game *game)
                 matchFound = true;
                 combo++;
                 game->score += static_cast<int>(std::pow(combinationSize, combo)) * game->globalComboMultiplier;
+                game->nodesPurgedInLastUpdate += combinationSize;
 
                 if (game->piecesCount == combinationSize)
                 {

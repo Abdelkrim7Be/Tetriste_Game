@@ -18,6 +18,7 @@ public:
     int piecesCount;
     int colorIndex;
     int shapeIndex;
+    int nodesPurgedInLastUpdate;
 
     Game(int colorCount, int shapeCount);
     ~Game();

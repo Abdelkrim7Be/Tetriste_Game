@@ -14,6 +14,7 @@ struct UserProfile {
     // Stats for Phase 2
     int matchesPlayed = 0;
     int nodesPurged = 0;
+    std::vector<std::string> achievements;
 };
 
 class UserManager {

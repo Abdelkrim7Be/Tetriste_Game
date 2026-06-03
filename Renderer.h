@@ -19,6 +19,7 @@ struct FloatingText {
 enum class GameState {
     LOGIN,
     MENU,
+    DIFFICULTY_SELECT,
     PLAYING,
     PAUSED,
     GAME_OVER
@@ -29,6 +30,19 @@ enum class AuthState {
     PIN_ENTRY,
     PIN_SETUP,
     AVATAR_SELECT
+};
+
+enum class Difficulty {
+    RECRUIT,
+    VETERAN,
+    ELITE
+};
+
+struct Achievement {
+    std::string id;
+    std::string name;
+    std::string description;
+    bool unlocked = false;
 };
 
 class Renderer {
@@ -43,7 +57,7 @@ public:
     void triggerInsertionEffect() { insertionTimer = 0.4f; }
     void triggerFlash() { flashTimer = 0.2f; }
 
-    // Auth Input handling
+    // Auth & Difficulty Input
     void handleTextInput(uint32_t unicode);
     std::string getLoginPseudo() const { return loginPseudo; }
     std::string getLoginPin() const { return loginPin; }
@@ -53,6 +67,9 @@ public:
     
     AuthState getAuthState() const { return authState; }
     void setAuthState(AuthState s) { authState = s; }
+    
+    Difficulty getDifficulty() const { return difficulty; }
+    void setDifficulty(Difficulty d) { difficulty = d; }
 
 private:
     sf::RenderWindow &window;
@@ -61,6 +78,7 @@ private:
 
     bool showAbout = false;
     int menuSelection = 0; // 0: Play, 1: About, 2: Exit
+    Difficulty difficulty = Difficulty::RECRUIT;
     
     // UI Helpers
     void drawCard(const std::string& title, sf::Vector2f pos, sf::Vector2f size);
@@ -76,11 +94,13 @@ private:
 
     void drawLoginScreen();
     void drawAvatarSelection();
+    void drawDifficultySelection();
     void drawMainMenu();
     void drawGameOver(int finalScore);
     void drawPiece(Piece &piece, float x, float y, float scale = 1.0f);
     void drawAboutPage();
     void drawLeaderboard(float x, float y);
+    void drawStats(float x, float y);
     std::string getTextureName(T_Color color, T_Shape shape);
 
     sf::Clock clock;

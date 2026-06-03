@@ -19,6 +19,8 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
         drawLoginScreen();
     } else if (state == GameState::MENU) {
         drawMainMenu();
+    } else if (state == GameState::DIFFICULTY_SELECT) {
+        drawDifficultySelection();
     } else if (state == GameState::GAME_OVER) {
         drawGameOver(game.score);
     } else {
@@ -143,10 +145,11 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
                 drawFancyPiece(*nextPiece, uiX + 105, 330, pulse * 1.2f, false);
             }
 
-            drawLeaderboard(uiX, 380.0f);
+            drawLeaderboard(uiX, 350.0f);
+            drawStats(uiX, 475.0f);
 
             sf::Text hints("J/K: Insert  C/S: Shift\nA: Info  ESC: Pause", assets.getFont("main"), 14);
-            hints.setPosition(uiX + 10, viewHeight - 60.0f);
+            hints.setPosition(uiX + 10, viewHeight - 40.0f);
             hints.setFillColor(UI::MutedText);
             window.draw(hints);
         }
@@ -286,7 +289,7 @@ void Renderer::drawAvatarSelection() {
             float y = cy - 50 + c * 50;
             
             bool selected = (count == avatarIndex);
-            Piece p; p.color = (T_Color)c; p.shape = (T_Shape)s;
+            Piece p((T_Color)c, (T_Shape)s, nullptr, nullptr, nullptr, nullptr, nullptr);
             drawFancyPiece(p, x, y, selected ? 1.2f : 0.8f, selected);
             
             if (selected) {
@@ -440,4 +443,57 @@ std::string Renderer::getTextureName(T_Color c, T_Shape s) {
     switch(c) { case T_Color::BLUE: cs = "blue"; break; case T_Color::YELLOW: cs = "yellow"; break; case T_Color::RED: cs = "red"; break; case T_Color::GREEN: cs = "green"; break; case T_Color::WHITE: cs = "white"; break; }
     switch(s) { case T_Shape::SQUARE: ss = "square"; break; case T_Shape::DIAMOND: ss = "diamond"; break; case T_Shape::CIRCLE: ss = "circle"; break; case T_Shape::TRIANGLE: ss = "triangle"; break; case T_Shape::STAR: ss = "star"; break; }
     return cs + "_" + ss;
+}
+
+void Renderer::drawDifficultySelection() {
+    float cx = window.getSize().x / 2.0f, cy = window.getSize().y / 2.0f;
+    drawGlassPanel(sf::Vector2f(500, 400), sf::Vector2f(cx - 250, cy - 200));
+
+    sf::Text h("SELECT DIFFICULTY", assets.getFont("main"), 40);
+    h.setFillColor(UI::NeonGreen);
+    UI::centerText(h, sf::Vector2f(cx, cy - 150));
+    window.draw(h);
+
+    std::vector<std::string> diffs = {"RECRUIT", "VETERAN", "ELITE"};
+    std::vector<std::string> descs = {
+        "Board capacity: 100% | Slow gravity",
+        "Board capacity: 80% | Normal gravity",
+        "Board capacity: 60% | Fast gravity"
+    };
+
+    for (int i = 0; i < 3; ++i) {
+        bool selected = (int)difficulty == i;
+        sf::Text t(diffs[i], assets.getFont("main"), 30);
+        UI::centerText(t, sf::Vector2f(cx, cy - 50 + i * 80));
+        
+        if (selected) {
+            t.setFillColor(sf::Color::Yellow);
+            t.setScale(1.1f, 1.1f);
+            sf::Text d(descs[i], assets.getFont("main"), 14);
+            UI::centerText(d, sf::Vector2f(cx, cy - 20 + i * 80));
+            d.setFillColor(UI::MutedText);
+            window.draw(d);
+        } else {
+            t.setFillColor(sf::Color::White);
+        }
+        window.draw(t);
+    }
+
+    sf::Text help("UP/DOWN: Select | ENTER: Deploy", assets.getFont("main"), 14);
+    UI::centerText(help, sf::Vector2f(cx, cy + 170));
+    help.setFillColor(UI::MutedText);
+    window.draw(help);
+}
+
+void Renderer::drawStats(float x, float y) {
+    drawCard("LIFETIME STATS", sf::Vector2f(x, y), sf::Vector2f(210, 80));
+    UserProfile p = userManager.getCurrentUserProfile();
+    
+    sf::Text m("MATCHES: " + std::to_string(p.matchesPlayed), assets.getFont("main"), 14);
+    m.setPosition(x + 10, y + 30);
+    window.draw(m);
+
+    sf::Text n("PURGED: " + std::to_string(p.nodesPurged), assets.getFont("main"), 14);
+    n.setPosition(x + 10, y + 54);
+    window.draw(n);
 }

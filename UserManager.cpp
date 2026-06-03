@@ -122,6 +122,11 @@ void UserManager::loadUsers() {
                 if (val.contains("pinHash")) p.pinHash = val["pinHash"];
                 if (val.contains("matchesPlayed")) p.matchesPlayed = val["matchesPlayed"];
                 if (val.contains("nodesPurged")) p.nodesPurged = val["nodesPurged"];
+                if (val.contains("achievements") && val["achievements"].is_array()) {
+                    for (auto& ach : val["achievements"]) {
+                        p.achievements.push_back(ach.get<std::string>());
+                    }
+                }
             }
             allUsers[name] = p;
         }
@@ -142,6 +147,9 @@ void UserManager::saveUsers() {
         profileObj["pinHash"] = p.pinHash;
         profileObj["matchesPlayed"] = p.matchesPlayed;
         profileObj["nodesPurged"] = p.nodesPurged;
+        json achArr = json::array();
+        for (const auto& a : p.achievements) achArr.push_back(a);
+        profileObj["achievements"] = achArr;
         j[p.pseudo] = profileObj;
     }
 

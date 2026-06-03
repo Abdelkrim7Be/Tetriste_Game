@@ -139,6 +139,19 @@ void handlePlayingInput(sf::Event& event, sf::RenderWindow& window, GameState& s
             std::string popupText = "+" + std::to_string(scoreChange);
             if (currentGame->globalComboMultiplier > 1) popupText += " (COMBO x" + std::to_string(currentGame->globalComboMultiplier) + "!)";
             renderer.addPopup(popupText, sf::Vector2f(window.getSize().x / 2.0f, 100.0f)); 
+            
+            // Stats update
+            UserProfile p = userManager.getCurrentUserProfile();
+            p.nodesPurged += currentGame->nodesPurgedInLastUpdate;
+            
+            // Achievement: Veteran Purger (100 nodes)
+            auto hasAch = [&](std::string id) { return std::find(p.achievements.begin(), p.achievements.end(), id) != p.achievements.end(); };
+            if (p.nodesPurged >= 100 && !hasAch("vet_purger")) {
+                p.achievements.push_back("vet_purger");
+                renderer.addPopup("ACHIEVEMENT: VETERAN PURGER", sf::Vector2f(400, 200), sf::Color::Magenta);
+            }
+            
+            userManager.updateProfile(p);
             userManager.updateRecord(currentGame->score);
             currentGame->globalComboMultiplier++;
         } else {
@@ -253,13 +266,47 @@ int main() {
                     else if (event.key.code == sf::Keyboard::Down) renderer.setMenuSelection((renderer.getMenuSelection() + 1) % 3);
                     else if (event.key.code == sf::Keyboard::Enter) {
                         int selection = renderer.getMenuSelection();
-                        if (selection == 0) { initializeNewGame(currentGame, nextPiece); state = GameState::PLAYING; }
+                        if (selection == 0) { state = GameState::DIFFICULTY_SELECT; }
                         else if (selection == 1) renderer.toggleAbout();
                         else if (selection == 2) window.close();
                     } else if (event.key.code == sf::Keyboard::A) renderer.toggleAbout();
-                } else if (state == GameState::GAME_OVER) { if (event.key.code == sf::Keyboard::Space) state = GameState::MENU; }
-                else if (state == GameState::PAUSED) { if (event.key.code == sf::Keyboard::Escape) state = GameState::PLAYING; }
+                } else if (state == GameState::DIFFICULTY_SELECT) {
+                    if (event.key.code == sf::Keyboard::Up) renderer.setDifficulty((Difficulty)(((int)renderer.getDifficulty() + 2) % 3));
+                    else if (event.key.code == sf::Keyboard::Down) renderer.setDifficulty((Difficulty)(((int)renderer.getDifficulty() + 1) % 3));
+                    else if (event.key.code == sf::Keyboard::Enter) {
+                        initializeNewGame(currentGame, nextPiece);
+                        state = GameState::PLAYING;
+                    } else if (event.key.code == sf::Keyboard::Escape) state = GameState::MENU;
+                } else if (state == GameState::GAME_OVER) { 
+                    if (event.key.code == sf::Keyboard::Space) state = GameState::MENU; 
+                } else if (state == GameState::PAUSED) { if (event.key.code == sf::Keyboard::Escape) state = GameState::PLAYING; }
                 else if (state == GameState::PLAYING) handlePlayingInput(event, window, state, currentGame, nextPiece, renderer, assets, userManager, sound, music);
+            }
+        }
+        if (state == GameState::PLAYING) {
+            // Check for game over (capacity exceeded)
+            sf::Vector2u winSize = window.getSize();
+            float sidebarWidth = 240.0f; float startX = 60.0f; float startY = 60.0f; float spacingX = 60.0f; float spacingY = 80.0f;
+            float boardWidth = static_cast<float>(winSize.x) - sidebarWidth - startX;
+            int piecesPerRow = static_cast<int>(boardWidth / spacingX); if (piecesPerRow < 1) piecesPerRow = 1;
+            int maxRows = static_cast<int>((static_cast<float>(winSize.y) - startY - 25.0f) / spacingY) + 1;
+            int capacity = piecesPerRow * maxRows;
+            
+            // Apply difficulty modifiers
+            if (renderer.getDifficulty() == Difficulty::VETERAN) capacity = static_cast<int>(capacity * 0.8);
+            else if (renderer.getDifficulty() == Difficulty::ELITE) capacity = static_cast<int>(capacity * 0.6);
+
+            if (currentGame->piecesCount >= capacity) {
+                state = GameState::GAME_OVER;
+                UserProfile p = userManager.getCurrentUserProfile();
+                p.matchesPlayed++;
+                // Achievements
+                auto hasAch = [&](std::string id) { return std::find(p.achievements.begin(), p.achievements.end(), id) != p.achievements.end(); };
+                if (p.matchesPlayed >= 1 && !hasAch("first_match")) { p.achievements.push_back("first_match"); renderer.addPopup("ACHIEVEMENT: PURGE INITIATE", sf::Vector2f(400, 200), sf::Color::Magenta); }
+                if (renderer.getDifficulty() == Difficulty::ELITE && !hasAch("elite_op")) { p.achievements.push_back("elite_op"); renderer.addPopup("ACHIEVEMENT: ELITE OPERATIVE", sf::Vector2f(400, 200), sf::Color::Magenta); }
+                
+                userManager.updateProfile(p);
+                userManager.updateRecord(currentGame->score);
             }
         }
         if (state == GameState::PLAYING || state == GameState::PAUSED) renderer.render(*currentGame, nextPiece, state);
