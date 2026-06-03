@@ -183,11 +183,25 @@ int main() {
                 if (state == GameState::LOGIN) {
                     if (event.key.code == sf::Keyboard::Enter) {
                         std::string p = renderer.getLoginPseudo();
-                        if (userManager.loginOrCreate(p)) { 
-                            state = GameState::MENU; 
-                            renderer.addPopup("Welcome, " + p + "!", sf::Vector2f(400, 300), sf::Color::Cyan); 
+                        // Basic trimming for the check
+                        std::string trimmed = p;
+                        trimmed.erase(0, trimmed.find_first_not_of(" \t\r\n"));
+                        trimmed.erase(trimmed.find_last_not_of(" \t\r\n") + 1);
+
+                        if (trimmed.empty()) {
+                            renderer.addPopup("Name cannot be empty!", sf::Vector2f(400, 500), sf::Color::Red);
                         } else {
-                            renderer.addPopup("Invalid Pseudo (Alpha-numeric, max 15)", sf::Vector2f(400, 500), sf::Color::Red);
+                            bool existing = userManager.userExists(trimmed);
+                            if (userManager.loginOrCreate(p)) { 
+                                state = GameState::MENU; 
+                                if (existing) {
+                                    renderer.addPopup("Welcome back, " + trimmed + "!", sf::Vector2f(400, 300), sf::Color::Cyan); 
+                                } else {
+                                    renderer.addPopup("New Operator Profile Created!", sf::Vector2f(400, 300), sf::Color::Green);
+                                }
+                            } else {
+                                renderer.addPopup("Invalid Name (Alpha-numeric, max 15)", sf::Vector2f(400, 500), sf::Color::Red);
+                            }
                         }
                     }
                 } else if (state == GameState::MENU) {

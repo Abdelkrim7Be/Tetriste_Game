@@ -3,7 +3,7 @@ CXXFLAGS = -Wall -Wextra -std=c++11 -I./include
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-audio -lsfml-system
 
 TARGET = Tetriste
-SRCS = main.cpp Game.cpp Piece.cpp AssetManager.cpp Renderer.cpp
+SRCS = main.cpp Game.cpp Piece.cpp AssetManager.cpp Renderer.cpp UserManager.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)

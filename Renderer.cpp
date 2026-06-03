@@ -298,11 +298,12 @@ void Renderer::drawGameOver(int s) {
 }
 
 void Renderer::drawLeaderboard(float x, float y) {
-    drawCard("ELITE OPERATORS", sf::Vector2f(x, y), sf::Vector2f(210, 160));
-    auto top = userManager.getTop5();
+    drawCard("ELITE OPERATORS (TOP 3)", sf::Vector2f(x, y), sf::Vector2f(210, 115));
+    auto top = userManager.getTopRecords(3);
     for (size_t i = 0; i < top.size(); ++i) {
         sf::Text r(std::to_string(i+1) + ". " + top[i].pseudo, assets.getFont("main"), 14);
         r.setPosition(x + 10, y + 30 + i * 24);
+        if (i == 0) r.setFillColor(sf::Color::Yellow); // Gold for #1
         window.draw(r);
         sf::Text s(std::to_string(top[i].record), assets.getFont("main"), 14);
         s.setPosition(x + 150, y + 30 + i * 24);

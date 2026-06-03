@@ -53,7 +53,7 @@ std::string UserManager::getCurrentUserPseudo() const {
     return currentUserPseudo;
 }
 
-std::vector<UserRecord> UserManager::getTop5() const {
+std::vector<UserRecord> UserManager::getTopRecords(int n) const {
     std::vector<UserRecord> records;
     for (auto const& pair : allUsers) {
         records.push_back({pair.first, pair.second});
@@ -63,10 +63,17 @@ std::vector<UserRecord> UserManager::getTop5() const {
         return a.record > b.record;
     });
 
-    if (records.size() > 5) {
-        records.resize(5);
+    if (records.size() > (size_t)n) {
+        records.resize(n);
     }
     return records;
+}
+
+bool UserManager::userExists(const std::string& pseudo) const {
+    std::string trimmed = pseudo;
+    trimmed.erase(0, trimmed.find_first_not_of(" \t\r\n"));
+    trimmed.erase(trimmed.find_last_not_of(" \t\r\n") + 1);
+    return allUsers.find(trimmed) != allUsers.end();
 }
 
 void UserManager::loadUsers() {

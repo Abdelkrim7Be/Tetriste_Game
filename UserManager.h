@@ -21,7 +21,8 @@ public:
     void updateRecord(int score);
     int getCurrentUserRecord() const;
     std::string getCurrentUserPseudo() const;
-    std::vector<UserRecord> getTop5() const;
+    std::vector<UserRecord> getTopRecords(int n = 3) const;
+    bool userExists(const std::string& pseudo) const;
 
 private:
     std::string filename;

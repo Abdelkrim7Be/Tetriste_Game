@@ -20,7 +20,7 @@ Tetriste is a terminal-based (and SFML-enhanced) game that utilizes complex link
 - `colorShifting` and `shapeShifting`: Implement cyclic shifts based on the next piece's attributes.
 
 ### 3. User & State Management
-- **UserManager:** Handles password-protected user accounts. Data is stored in `assets/users.json` in a robust JSON format. It automatically migrates from legacy `.txt` files.
+- **UserManager:** Handles user profiles and high scores. Data is stored in `assets/users.json` in a structured JSON format. It automatically migrates from legacy `.txt` files and supports a password-less "Local Profile" system.
 - **Config Management:** `AssetManager` persists game settings (like volume) in `assets/config.json`.
 - **GameState Machine:** The application flow is controlled by a state machine with the following states:
   - `MENU`: Main entry point with Play, Rules, and Exit options.
