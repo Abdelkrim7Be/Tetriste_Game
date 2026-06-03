@@ -102,7 +102,14 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
 
             // Player Card
             drawCard("OPERATOR: " + userManager.getCurrentUserPseudo(), sf::Vector2f(uiX, 110), sf::Vector2f(210, 60));
-            sf::Text recText("BEST: " + std::to_string(userManager.getCurrentUserRecord()), assets.getFont("main"), 16);
+            UserProfile cur = userManager.getCurrentUserProfile();
+            if (assets.hasTexture(cur.avatarId)) {
+                sf::Sprite av(assets.getTexture(cur.avatarId));
+                av.setScale(0.8f, 0.8f);
+                av.setPosition(uiX + 165, 125);
+                window.draw(av);
+            }
+            sf::Text recText("BEST: " + std::to_string(cur.record), assets.getFont("main"), 16);
             recText.setPosition(uiX + 10, 140);
             recText.setFillColor(sf::Color::Yellow);
             window.draw(recText);
@@ -219,9 +226,14 @@ void Renderer::drawLoginScreen() {
     UI::centerText(title, sf::Vector2f(cx, 100));
     window.draw(title);
 
+    if (authState == AuthState::AVATAR_SELECT) {
+        drawAvatarSelection();
+        return;
+    }
+
     drawGlassPanel(sf::Vector2f(420, 320), sf::Vector2f(cx - 210, cy - 140));
     
-    auto drawIn = [&](std::string lbl, std::string val, float y, bool active) {
+    auto drawIn = [&](std::string lbl, std::string val, float y, bool active, bool isPassword) {
         sf::Text lText(lbl, assets.getFont("main"), 14);
         lText.setPosition(cx - 190, y - 30);
         lText.setFillColor(UI::MutedText);
@@ -234,24 +246,83 @@ void Renderer::drawLoginScreen() {
         box.setOutlineColor(active ? UI::NeonGreen : sf::Color(80, 80, 90));
         window.draw(box);
 
-        if (active && (int)(cursorBlinkTimer * 2) % 2 == 0) val += "_";
-        sf::Text vText(val, assets.getFont("main"), 22);
+        std::string displayVal = val;
+        if (isPassword) displayVal = std::string(val.length(), '*');
+        if (active && (int)(cursorBlinkTimer * 2) % 2 == 0) displayVal += "_";
+        
+        sf::Text vText(displayVal, assets.getFont("main"), 22);
         vText.setPosition(cx - 180, y + 2);
         window.draw(vText);
     };
 
-    drawIn("OPERATOR_ID (PSEUDO)", loginPseudo, cy - 20, true);
+    if (authState == AuthState::PSEUDO) {
+        drawIn("OPERATOR_ID (PSEUDO)", loginPseudo, cy - 20, true, false);
+    } else if (authState == AuthState::PIN_ENTRY) {
+        drawIn("ENTER 4-DIGIT PIN", loginPin, cy - 20, true, true);
+    } else if (authState == AuthState::PIN_SETUP) {
+        drawIn("NEW ACCOUNT: SET 4-DIGIT PIN", loginPin, cy - 20, true, true);
+    }
 
-    sf::Text h("ENTER: Start Session", assets.getFont("main"), 14);
+    sf::Text h("ENTER: Continue", assets.getFont("main"), 14);
     UI::centerText(h, sf::Vector2f(cx, cy + 80));
     h.setFillColor(UI::MutedText);
     window.draw(h);
 }
 
+void Renderer::drawAvatarSelection() {
+    float cx = window.getSize().x / 2.0f, cy = window.getSize().y / 2.0f;
+    drawGlassPanel(sf::Vector2f(500, 350), sf::Vector2f(cx - 250, cy - 150));
+
+    sf::Text h("SELECT YOUR AVATAR", assets.getFont("main"), 24);
+    UI::centerText(h, sf::Vector2f(cx, cy - 110));
+    h.setFillColor(UI::NeonGreen);
+    window.draw(h);
+
+    // Show a grid of avatars (5 colors x 5 shapes = 25 avatars)
+    int count = 0;
+    for (int c = 0; c < 5; ++c) {
+        for (int s = 0; s < 5; ++s) {
+            float x = cx - 180 + s * 90;
+            float y = cy - 50 + c * 50;
+            
+            bool selected = (count == avatarIndex);
+            Piece p; p.color = (T_Color)c; p.shape = (T_Shape)s;
+            drawFancyPiece(p, x, y, selected ? 1.2f : 0.8f, selected);
+            
+            if (selected) {
+                sf::RectangleShape highlight(sf::Vector2f(60, 45));
+                highlight.setOrigin(30, 22.5);
+                highlight.setPosition(x, y);
+                highlight.setFillColor(sf::Color::Transparent);
+                highlight.setOutlineColor(sf::Color::Yellow);
+                highlight.setOutlineThickness(2);
+                window.draw(highlight);
+            }
+            count++;
+        }
+    }
+
+    sf::Text help("USE ARROWS TO SELECT | ENTER TO FINALIZE", assets.getFont("main"), 14);
+    UI::centerText(help, sf::Vector2f(cx, cy + 170));
+    help.setFillColor(UI::MutedText);
+    window.draw(help);
+}
+
 void Renderer::handleTextInput(uint32_t uni) {
     if (uni == '\t' || uni == '\r' || uni == '\n') return;
-    if (uni == 8) { if (!loginPseudo.empty()) loginPseudo.pop_back(); }
-    else if (uni < 128 && loginPseudo.length() < 16) loginPseudo += (char)uni;
+    if (uni == 8) { 
+        if (authState == AuthState::PSEUDO) {
+            if (!loginPseudo.empty()) loginPseudo.pop_back(); 
+        } else if (authState == AuthState::PIN_ENTRY || authState == AuthState::PIN_SETUP) {
+            if (!loginPin.empty()) loginPin.pop_back();
+        }
+    } else if (uni < 128) {
+        if (authState == AuthState::PSEUDO) {
+            if (loginPseudo.length() < 16) loginPseudo += (char)uni;
+        } else if (authState == AuthState::PIN_ENTRY || authState == AuthState::PIN_SETUP) {
+            if (std::isdigit(uni) && loginPin.length() < 4) loginPin += (char)uni;
+        }
+    }
 }
 
 void Renderer::drawMainMenu() {
@@ -301,8 +372,19 @@ void Renderer::drawLeaderboard(float x, float y) {
     drawCard("ELITE OPERATORS (TOP 3)", sf::Vector2f(x, y), sf::Vector2f(210, 115));
     auto top = userManager.getTopRecords(3);
     for (size_t i = 0; i < top.size(); ++i) {
-        sf::Text r(std::to_string(i+1) + ". " + top[i].pseudo, assets.getFont("main"), 14);
-        r.setPosition(x + 10, y + 30 + i * 24);
+        // Draw Avatar piece
+        std::string avatar = top[i].avatarId;
+        // Parse avatarId "color_shape"
+        sf::Sprite avatarSprite;
+        if (assets.hasTexture(avatar)) {
+            avatarSprite.setTexture(assets.getTexture(avatar));
+            avatarSprite.setScale(0.5f, 0.5f);
+            avatarSprite.setPosition(x + 10, y + 30 + i * 24);
+            window.draw(avatarSprite);
+        }
+
+        sf::Text r(top[i].pseudo, assets.getFont("main"), 14);
+        r.setPosition(x + 35, y + 30 + i * 24);
         if (i == 0) r.setFillColor(sf::Color::Yellow); // Gold for #1
         window.draw(r);
         sf::Text s(std::to_string(top[i].record), assets.getFont("main"), 14);

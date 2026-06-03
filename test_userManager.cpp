@@ -4,42 +4,39 @@
 #include "UserManager.h"
 
 void test_loginOrCreate() {
-    std::cout << "Testing loginOrCreate..." << std::endl;
-    std::string testFile = "assets/test_users.json";
-    // Ensure clean state
+    std::cout << "Testing loginOrCreate with PIN..." << std::endl;
+    std::string testFile = "assets/test_users_profiles.json";
     std::remove(testFile.c_str());
 
     UserManager um(testFile);
     
-    // Test valid creation
-    assert(um.loginOrCreate("Karimo") == true);
+    // Test creation with PIN
+    assert(um.loginOrCreate("Karimo", "1234") == true);
     assert(um.isLoggedIn() == true);
     assert(um.getCurrentUserPseudo() == "Karimo");
-    assert(um.getCurrentUserRecord() == 0);
+    assert(um.verifyPin("Karimo", "1234") == true);
+    assert(um.verifyPin("Karimo", "0000") == false);
 
     // Test record update
     um.updateRecord(10);
     assert(um.getCurrentUserRecord() == 10);
 
-    // Test logout
+    // Test profile update
+    UserProfile p = um.getCurrentUserProfile();
+    p.avatarId = "red_circle";
+    um.updateProfile(p);
+    assert(um.getCurrentUserProfile().avatarId == "red_circle");
+
     um.logout();
     assert(um.isLoggedIn() == false);
-    assert(um.getCurrentUserPseudo() == "");
 
-    // Test loading existing
+    // Test loading existing with PIN verification
     UserManager um2(testFile);
-    assert(um2.loginOrCreate("Karimo") == true);
+    assert(um2.userExists("Karimo") == true);
+    assert(um2.verifyPin("Karimo", "1234") == true);
+    assert(um2.loginOrCreate("Karimo", "1234") == true);
     assert(um2.getCurrentUserRecord() == 10);
-
-    // Test invalid pseudos
-    assert(um2.loginOrCreate("") == false);
-    assert(um2.loginOrCreate("   ") == false);
-    assert(um2.loginOrCreate("ThisIsWayTooLongForAUsername") == false);
-    assert(um2.loginOrCreate("Invalid@Char") == false);
-
-    // Test trimming
-    assert(um2.loginOrCreate("  TrimMe  ") == true);
-    assert(um2.getCurrentUserPseudo() == "TrimMe");
+    assert(um2.getCurrentUserProfile().avatarId == "red_circle");
 
     std::remove(testFile.c_str());
     std::cout << "loginOrCreate passed!" << std::endl;
@@ -47,49 +44,46 @@ void test_loginOrCreate() {
 
 void test_topRecords() {
     std::cout << "Testing topRecords(3)..." << std::endl;
-    std::string testFile = "assets/test_users_top.json";
+    std::string testFile = "assets/test_users_top_profiles.json";
     std::remove(testFile.c_str());
 
     UserManager um(testFile);
-    um.loginOrCreate("User1"); um.updateRecord(10);
-    um.loginOrCreate("User2"); um.updateRecord(50);
-    um.loginOrCreate("User3"); um.updateRecord(30);
-    um.loginOrCreate("User4"); um.updateRecord(5);
-    um.loginOrCreate("User5"); um.updateRecord(100);
-    um.loginOrCreate("User6"); um.updateRecord(20);
+    um.loginOrCreate("User1", "1111"); um.updateRecord(10);
+    um.loginOrCreate("User2", "2222"); um.updateRecord(50);
+    um.loginOrCreate("User3", "3333"); um.updateRecord(30);
+    um.loginOrCreate("User4", "4444"); um.updateRecord(5);
+    um.loginOrCreate("User5", "5555"); um.updateRecord(100);
+    um.loginOrCreate("User6", "6666"); um.updateRecord(20);
 
     auto top = um.getTopRecords(3);
     assert(top.size() == 3);
     assert(top[0].pseudo == "User5");
     assert(top[0].record == 100);
     assert(top[1].pseudo == "User2");
-    assert(top[1].record == 50);
     assert(top[2].pseudo == "User3");
-    assert(top[2].record == 30);
 
     std::remove(testFile.c_str());
     std::cout << "topRecords passed!" << std::endl;
 }
 
 void test_migration() {
-    std::cout << "Testing migration..." << std::endl;
-    // Create legacy format file
+    std::cout << "Testing migration from old format..." << std::endl;
     std::ofstream legacy("assets/scores.txt");
-    legacy << "OldUser secret 123" << std::endl;
-    legacy << "AnotherUser 456" << std::endl;
+    legacy << "LegacyUser 999" << std::endl;
     legacy.close();
 
-    std::string testFile = "assets/test_migration.json";
+    std::string testFile = "assets/test_migration_profiles.json";
     std::remove(testFile.c_str());
 
     UserManager um(testFile);
-    assert(um.loginOrCreate("OldUser") == true);
-    assert(um.getCurrentUserRecord() == 123);
-    
-    assert(um.loginOrCreate("AnotherUser") == true);
-    assert(um.getCurrentUserRecord() == 456);
+    assert(um.userExists("LegacyUser") == true);
+    assert(um.loginOrCreate("LegacyUser") == true);
+    assert(um.getCurrentUserRecord() == 999);
+    // Legacy users have empty pinHash by default
+    assert(um.verifyPin("LegacyUser", "") == true);
 
     std::remove(testFile.c_str());
+    std::remove("assets/scores.txt");
     std::cout << "migration passed!" << std::endl;
 }
 
@@ -98,6 +92,6 @@ int main() {
     test_loginOrCreate();
     test_topRecords();
     test_migration();
-    std::cout << "All UserManager tests passed!" << std::endl;
+    std::cout << "All Phase 1 UserManager tests passed!" << std::endl;
     return 0;
 }

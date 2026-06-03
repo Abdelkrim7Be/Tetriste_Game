@@ -24,6 +24,13 @@ enum class GameState {
     GAME_OVER
 };
 
+enum class AuthState {
+    PSEUDO,
+    PIN_ENTRY,
+    PIN_SETUP,
+    AVATAR_SELECT
+};
+
 class Renderer {
 public:
     Renderer(sf::RenderWindow &window, AssetManager &assets, UserManager &userManager);
@@ -36,10 +43,16 @@ public:
     void triggerInsertionEffect() { insertionTimer = 0.4f; }
     void triggerFlash() { flashTimer = 0.2f; }
 
-    // Login Input handling
+    // Auth Input handling
     void handleTextInput(uint32_t unicode);
     std::string getLoginPseudo() const { return loginPseudo; }
-    void clearLoginField() { loginPseudo = ""; }
+    std::string getLoginPin() const { return loginPin; }
+    int getAvatarIndex() const { return avatarIndex; }
+    void setAvatarIndex(int idx) { avatarIndex = idx; }
+    void clearLoginField() { loginPseudo = ""; loginPin = ""; }
+    
+    AuthState getAuthState() const { return authState; }
+    void setAuthState(AuthState s) { authState = s; }
 
 private:
     sf::RenderWindow &window;
@@ -56,9 +69,13 @@ private:
 
     // Login UI State
     std::string loginPseudo;
+    std::string loginPin;
+    AuthState authState = AuthState::PSEUDO;
+    int avatarIndex = 0;
     float cursorBlinkTimer = 0;
 
     void drawLoginScreen();
+    void drawAvatarSelection();
     void drawMainMenu();
     void drawGameOver(int finalScore);
     void drawPiece(Piece &piece, float x, float y, float scale = 1.0f);

@@ -14,6 +14,7 @@ set(SOURCES
     Piece.cpp
     AssetManager.cpp
     Renderer.cpp
+    UserManager.cpp
 )
 
 # Executable

@@ -174,6 +174,8 @@ int main() {
     sf::Sound sound, music;
     if (assets.hasSoundBuffer("music")) { music.setBuffer(assets.getSoundBuffer("music")); music.setLoop(true); music.setVolume(50.0f); music.play(); }
     GameState state = GameState::LOGIN; Game *currentGame = nullptr; Piece *nextPiece = nullptr;
+    std::string tempPseudo = "";
+
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -181,28 +183,70 @@ int main() {
             if (event.type == sf::Event::TextEntered && state == GameState::LOGIN) renderer.handleTextInput(event.text.unicode);
             if (event.type == sf::Event::KeyPressed) {
                 if (state == GameState::LOGIN) {
+                    AuthState auth = renderer.getAuthState();
                     if (event.key.code == sf::Keyboard::Enter) {
-                        std::string p = renderer.getLoginPseudo();
-                        // Basic trimming for the check
-                        std::string trimmed = p;
-                        trimmed.erase(0, trimmed.find_first_not_of(" \t\r\n"));
-                        trimmed.erase(trimmed.find_last_not_of(" \t\r\n") + 1);
+                        if (auth == AuthState::PSEUDO) {
+                            tempPseudo = renderer.getLoginPseudo();
+                            // Trim
+                            tempPseudo.erase(0, tempPseudo.find_first_not_of(" \t\r\n"));
+                            tempPseudo.erase(tempPseudo.find_last_not_of(" \t\r\n") + 1);
 
-                        if (trimmed.empty()) {
-                            renderer.addPopup("Name cannot be empty!", sf::Vector2f(400, 500), sf::Color::Red);
-                        } else {
-                            bool existing = userManager.userExists(trimmed);
-                            if (userManager.loginOrCreate(p)) { 
-                                state = GameState::MENU; 
-                                if (existing) {
-                                    renderer.addPopup("Welcome back, " + trimmed + "!", sf::Vector2f(400, 300), sf::Color::Cyan); 
+                            if (tempPseudo.empty()) {
+                                renderer.addPopup("Name cannot be empty!", sf::Vector2f(400, 500), sf::Color::Red);
+                            } else {
+                                if (userManager.userExists(tempPseudo)) {
+                                    renderer.setAuthState(AuthState::PIN_ENTRY);
+                                    renderer.addPopup("Welcome back, " + tempPseudo + "!", sf::Vector2f(400, 300), sf::Color::Cyan);
                                 } else {
-                                    renderer.addPopup("New Operator Profile Created!", sf::Vector2f(400, 300), sf::Color::Green);
+                                    renderer.setAuthState(AuthState::PIN_SETUP);
+                                    renderer.addPopup("New Profile: Set PIN", sf::Vector2f(400, 300), sf::Color::Green);
+                                }
+                            }
+                        } else if (auth == AuthState::PIN_ENTRY) {
+                            std::string pin = renderer.getLoginPin();
+                            if (pin.length() != 4) {
+                                renderer.addPopup("PIN must be 4 digits", sf::Vector2f(400, 500), sf::Color::Red);
+                            } else if (userManager.verifyPin(tempPseudo, pin)) {
+                                if (userManager.loginOrCreate(tempPseudo, pin)) {
+                                    state = GameState::MENU;
+                                    renderer.addPopup("Login Successful!", sf::Vector2f(400, 300), sf::Color::Cyan);
                                 }
                             } else {
-                                renderer.addPopup("Invalid Name (Alpha-numeric, max 15)", sf::Vector2f(400, 500), sf::Color::Red);
+                                renderer.addPopup("Incorrect PIN", sf::Vector2f(400, 500), sf::Color::Red);
+                            }
+                        } else if (auth == AuthState::PIN_SETUP) {
+                            std::string pin = renderer.getLoginPin();
+                            if (pin.length() != 4) {
+                                renderer.addPopup("Set 4-digit PIN", sf::Vector2f(400, 500), sf::Color::Red);
+                            } else {
+                                renderer.setAuthState(AuthState::AVATAR_SELECT);
+                            }
+                        } else if (auth == AuthState::AVATAR_SELECT) {
+                            std::string pin = renderer.getLoginPin();
+                            if (userManager.loginOrCreate(tempPseudo, pin)) {
+                                UserProfile p = userManager.getCurrentUserProfile();
+                                int idx = renderer.getAvatarIndex();
+                                T_Color c = (T_Color)(idx / 5);
+                                T_Shape s = (T_Shape)(idx % 5);
+                                std::string cname, sname;
+                                switch(c) { case T_Color::BLUE: cname = "blue"; break; case T_Color::YELLOW: cname = "yellow"; break; case T_Color::RED: cname = "red"; break; case T_Color::GREEN: cname = "green"; break; case T_Color::WHITE: cname = "white"; break; }
+                                switch(s) { case T_Shape::SQUARE: sname = "square"; break; case T_Shape::DIAMOND: sname = "diamond"; break; case T_Shape::CIRCLE: sname = "circle"; break; case T_Shape::TRIANGLE: sname = "triangle"; break; case T_Shape::STAR: sname = "star"; break; }
+                                p.avatarId = cname + "_" + sname;
+                                userManager.updateProfile(p);
+                                state = GameState::MENU;
+                                renderer.addPopup("Profile Finalized!", sf::Vector2f(400, 300), sf::Color::Green);
                             }
                         }
+                    } else if (auth == AuthState::AVATAR_SELECT) {
+                        int idx = renderer.getAvatarIndex();
+                        if (event.key.code == sf::Keyboard::Up) idx = (idx + 20) % 25;
+                        else if (event.key.code == sf::Keyboard::Down) idx = (idx + 5) % 25;
+                        else if (event.key.code == sf::Keyboard::Left) idx = (idx + 24) % 25;
+                        else if (event.key.code == sf::Keyboard::Right) idx = (idx + 1) % 25;
+                        renderer.setAvatarIndex(idx);
+                    } else if (event.key.code == sf::Keyboard::Escape) {
+                        renderer.setAuthState(AuthState::PSEUDO);
+                        renderer.clearLoginField();
                     }
                 } else if (state == GameState::MENU) {
                     if (event.key.code == sf::Keyboard::Up) renderer.setMenuSelection((renderer.getMenuSelection() + 2) % 3);
