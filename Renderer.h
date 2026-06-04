@@ -45,6 +45,9 @@ struct Achievement {
     std::string name;
     std::string description;
     bool unlocked = false;
+
+    Achievement(std::string i, std::string n, std::string d, bool u = false)
+        : id(i), name(n), description(d), unlocked(u) {}
 };
 
 class Renderer {

@@ -445,11 +445,10 @@ void Renderer::drawAchievementsPage() {
     window.draw(t);
 
     UserProfile user = userManager.getCurrentUserProfile();
-    std::vector<Achievement> allAchs = {
-        {"first_match", "PURGE INITIATE", "Clear your first sequence of nodes."},
-        {"vet_purger", "VETERAN PURGER", "Purge a total of 100 nodes."},
-        {"elite_op", "ELITE OPERATIVE", "Complete a match on ELITE difficulty."}
-    };
+    std::vector<Achievement> allAchs;
+    allAchs.push_back({"first_match", "PURGE INITIATE", "Clear your first sequence of nodes.", false});
+    allAchs.push_back({"vet_purger", "VETERAN PURGER", "Purge a total of 100 nodes.", false});
+    allAchs.push_back({"elite_op", "ELITE OPERATIVE", "Complete a match on ELITE difficulty.", false});
 
     float startX = 100, startY = 140;
     float cardW = 600, cardH = 80;
