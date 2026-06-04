@@ -49,9 +49,9 @@ void test_similarSequenceTracker() {
     Game* game = new Game(5, 5);
     
     // P1(Blue, Square) -> P2(Blue, Circle) -> P3(Blue, Star)
-    Piece* p1 = new Piece(T_Color::BLUE, T_Shape::SQUARE, nullptr, nullptr, nullptr, nullptr, nullptr);
-    Piece* p2 = new Piece(T_Color::BLUE, T_Shape::CIRCLE, nullptr, nullptr, nullptr, nullptr, nullptr);
-    Piece* p3 = new Piece(T_Color::BLUE, T_Shape::STAR,   nullptr, nullptr, nullptr, nullptr, nullptr);
+    Piece* p1 = game->drawPiece((int)T_Color::BLUE, (int)T_Shape::SQUARE);
+    Piece* p2 = game->drawPiece((int)T_Color::BLUE, (int)T_Shape::CIRCLE);
+    Piece* p3 = game->drawPiece((int)T_Color::BLUE, (int)T_Shape::STAR);
 
     game->insertPieceInRight(game, p1);
     game->insertPieceInRight(game, p2);
@@ -64,7 +64,7 @@ void test_similarSequenceTracker() {
     assert(seq == 3);
 
     // Add a different color
-    Piece* p4 = new Piece(T_Color::RED, T_Shape::SQUARE, nullptr, nullptr, nullptr, nullptr, nullptr);
+    Piece* p4 = game->drawPiece((int)T_Color::RED, (int)T_Shape::SQUARE);
     game->insertPieceInRight(game, p4);
 
     verifyConsistency(game);
@@ -85,9 +85,9 @@ void test_colorShifting() {
     std::cout << "Running test_colorShifting..." << std::endl;
     Game* game = new Game(5, 5);
     
-    Piece* p1 = new Piece(T_Color::BLUE, T_Shape::SQUARE, nullptr, nullptr, nullptr, nullptr, nullptr);
-    Piece* p2 = new Piece(T_Color::BLUE, T_Shape::CIRCLE, nullptr, nullptr, nullptr, nullptr, nullptr);
-    Piece* p3 = new Piece(T_Color::BLUE, T_Shape::STAR,   nullptr, nullptr, nullptr, nullptr, nullptr);
+    Piece* p1 = game->drawPiece((int)T_Color::BLUE, (int)T_Shape::SQUARE);
+    Piece* p2 = game->drawPiece((int)T_Color::BLUE, (int)T_Shape::CIRCLE);
+    Piece* p3 = game->drawPiece((int)T_Color::BLUE, (int)T_Shape::STAR);
     
     game->insertPieceInRight(game, p1);
     game->insertPieceInRight(game, p2);
@@ -140,9 +140,9 @@ void test_updateGame_matching() {
     Game* game = new Game(5, 5);
     
     // Create 3 Blue pieces in a row
-    Piece* p1 = new Piece(T_Color::BLUE, T_Shape::SQUARE, nullptr, nullptr, nullptr, nullptr, nullptr);
-    Piece* p2 = new Piece(T_Color::BLUE, T_Shape::CIRCLE, nullptr, nullptr, nullptr, nullptr, nullptr);
-    Piece* p3 = new Piece(T_Color::BLUE, T_Shape::STAR,   nullptr, nullptr, nullptr, nullptr, nullptr);
+    Piece* p1 = game->drawPiece((int)T_Color::BLUE, (int)T_Shape::SQUARE);
+    Piece* p2 = game->drawPiece((int)T_Color::BLUE, (int)T_Shape::CIRCLE);
+    Piece* p3 = game->drawPiece((int)T_Color::BLUE, (int)T_Shape::STAR);
     
     game->insertPieceInRight(game, p1);
     game->insertPieceInRight(game, p2);
