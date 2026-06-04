@@ -262,14 +262,25 @@ int main() {
                         renderer.clearLoginField();
                     }
                 } else if (state == GameState::MENU) {
-                    if (event.key.code == sf::Keyboard::Up) renderer.setMenuSelection((renderer.getMenuSelection() + 2) % 3);
-                    else if (event.key.code == sf::Keyboard::Down) renderer.setMenuSelection((renderer.getMenuSelection() + 1) % 3);
+                    if (event.key.code == sf::Keyboard::Up) renderer.setMenuSelection((renderer.getMenuSelection() + 4) % 5);
+                    else if (event.key.code == sf::Keyboard::Down) renderer.setMenuSelection((renderer.getMenuSelection() + 1) % 5);
                     else if (event.key.code == sf::Keyboard::Enter) {
                         int selection = renderer.getMenuSelection();
                         if (selection == 0) { state = GameState::DIFFICULTY_SELECT; }
-                        else if (selection == 1) renderer.toggleAbout();
-                        else if (selection == 2) window.close();
+                        else if (selection == 1) state = GameState::ACHIEVEMENTS;
+                        else if (selection == 2) state = GameState::SETTINGS;
+                        else if (selection == 3) renderer.toggleAbout();
+                        else if (selection == 4) window.close();
                     } else if (event.key.code == sf::Keyboard::A) renderer.toggleAbout();
+                } else if (state == GameState::ACHIEVEMENTS || state == GameState::SETTINGS) {
+                    if (event.key.code == sf::Keyboard::Escape) state = GameState::MENU;
+                    if (state == GameState::SETTINGS) {
+                        if (event.key.code == sf::Keyboard::Add || event.key.code == sf::Keyboard::Equal) {
+                            float v = std::min(100.0f, assets.getVolume() + 5.0f); assets.setVolume(v); music.setVolume(v);
+                        } else if (event.key.code == sf::Keyboard::Subtract || event.key.code == sf::Keyboard::Dash) {
+                            float v = std::max(0.0f, assets.getVolume() - 5.0f); assets.setVolume(v); music.setVolume(v);
+                        }
+                    }
                 } else if (state == GameState::DIFFICULTY_SELECT) {
                     if (event.key.code == sf::Keyboard::Up) renderer.setDifficulty((Difficulty)(((int)renderer.getDifficulty() + 2) % 3));
                     else if (event.key.code == sf::Keyboard::Down) renderer.setDifficulty((Difficulty)(((int)renderer.getDifficulty() + 1) % 3));
@@ -313,6 +324,6 @@ int main() {
         else { static Game dummyGame(0,0); renderer.render(dummyGame, nullptr, state); }
     }
     if (currentGame) delete currentGame;
-    if (nextPiece) delete nextPiece;
+    nextPiece = nullptr; 
     return 0;
 }

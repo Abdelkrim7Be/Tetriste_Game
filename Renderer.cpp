@@ -23,6 +23,10 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
         drawDifficultySelection();
     } else if (state == GameState::GAME_OVER) {
         drawGameOver(game.score);
+    } else if (state == GameState::ACHIEVEMENTS) {
+        drawAchievementsPage();
+    } else if (state == GameState::SETTINGS) {
+        drawSettingsPage();
     } else {
         sf::Vector2u winSize = window.getSize();
         float viewWidth = static_cast<float>(winSize.x);
@@ -49,7 +53,7 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
         border.setPosition(10.0f, 10.0f);
         border.setFillColor(sf::Color::Transparent);
         border.setOutlineThickness(2.0f);
-        border.setOutlineColor(sf::Color(UI::NeonGreen.r, UI::NeonGreen.g, UI::NeonGreen.b, (sf::Uint8)alpha));
+        border.setOutlineColor(sf::Color(UI::CyberTeal.r, UI::CyberTeal.g, UI::CyberTeal.b, (sf::Uint8)alpha));
         window.draw(border);
 
         // Draw board pieces
@@ -98,7 +102,7 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
             // Score Card
             drawCard("MISSION SCORE", sf::Vector2f(uiX, 20), sf::Vector2f(210, 80));
             sf::Text scoreText(std::to_string(game.score), assets.getFont("main"), 36);
-            scoreText.setFillColor(UI::NeonGreen);
+            scoreText.setFillColor(UI::CyberTeal);
             scoreText.setPosition(uiX + 10, 45);
             window.draw(scoreText);
 
@@ -132,8 +136,8 @@ void Renderer::render(Game &game, Piece *nextPiece, GameState state) {
             float fillWidth = (capacity > 0) ? (190.0f * game.piecesCount / capacity) : 0;
             sf::RectangleShape barFill(sf::Vector2f(fillWidth, 10));
             barFill.setPosition(uiX + 10, 225);
-            sf::Color barColor = UI::NeonGreen;
-            if (game.piecesCount > capacity * 0.8f) barColor = sf::Color::Red;
+            sf::Color barColor = UI::CyberTeal;
+            if (game.piecesCount > capacity * 0.8f) barColor = UI::NeonPink;
             else if (game.piecesCount > capacity * 0.5f) barColor = sf::Color::Yellow;
             barFill.setFillColor(barColor);
             window.draw(barFill);
@@ -204,13 +208,13 @@ void Renderer::drawFancyPiece(Piece &piece, float x, float y, float scale, bool 
 
 void Renderer::drawCard(const std::string& title, sf::Vector2f pos, sf::Vector2f size) {
     sf::RectangleShape card = UI::createPanel(size, pos);
-    card.setOutlineColor(sf::Color(UI::NeonGreen.r, UI::NeonGreen.g, UI::NeonGreen.b, 60));
+    card.setOutlineColor(sf::Color(UI::CyberTeal.r, UI::CyberTeal.g, UI::CyberTeal.b, 60));
     window.draw(card);
 
     if (assets.hasFont("main")) {
         sf::Text t(title, assets.getFont("main"), 12);
         t.setPosition(pos.x + 10, pos.y + 5);
-        t.setFillColor(UI::NeonGreen);
+        t.setFillColor(UI::CyberTeal);
         window.draw(t);
     }
 }
@@ -225,7 +229,7 @@ void Renderer::drawLoginScreen() {
     float cx = window.getSize().x / 2.0f, cy = window.getSize().y / 2.0f;
 
     sf::Text title("TETRISTE", assets.getFont("main"), 90);
-    title.setFillColor(UI::NeonGreen);
+    title.setFillColor(UI::CyberTeal);
     UI::centerText(title, sf::Vector2f(cx, 100));
     window.draw(title);
 
@@ -246,7 +250,7 @@ void Renderer::drawLoginScreen() {
         box.setPosition(cx - 190, y - 5);
         box.setFillColor(sf::Color(10, 10, 20));
         box.setOutlineThickness(active ? 2.0f : 1.0f);
-        box.setOutlineColor(active ? UI::NeonGreen : sf::Color(80, 80, 90));
+        box.setOutlineColor(active ? UI::CyberTeal : sf::Color(80, 80, 90));
         window.draw(box);
 
         std::string displayVal = val;
@@ -278,7 +282,7 @@ void Renderer::drawAvatarSelection() {
 
     sf::Text h("SELECT YOUR AVATAR", assets.getFont("main"), 24);
     UI::centerText(h, sf::Vector2f(cx, cy - 110));
-    h.setFillColor(UI::NeonGreen);
+    h.setFillColor(UI::CyberTeal);
     window.draw(h);
 
     // Show a grid of avatars (5 colors x 5 shapes = 25 avatars)
@@ -333,14 +337,20 @@ void Renderer::drawMainMenu() {
     float cx = window.getSize().x / 2.0f;
     
     sf::Text title("TETRISTE", assets.getFont("main"), 90);
-    title.setFillColor(UI::NeonGreen);
+    title.setFillColor(UI::CyberTeal);
     UI::centerText(title, sf::Vector2f(cx, 100));
     window.draw(title);
 
-    std::vector<std::string> opts = {"ESTABLISH LINK (PLAY)", "PROTOCOLS (RULES)", "TERMINATE (EXIT)"};
-    for (int i = 0; i < 3; ++i) {
-        sf::Text t(opts[i], assets.getFont("main"), 30);
-        UI::centerText(t, sf::Vector2f(cx, 280 + i * 80));
+    std::vector<std::string> opts = {
+        "ESTABLISH LINK (PLAY)", 
+        "PROTOCOL ARCHIVE (ACHIEVEMENTS)",
+        "SYSTEM CONFIG (SETTINGS)",
+        "PROTOCOLS (RULES)", 
+        "TERMINATE (EXIT)"
+    };
+    for (int i = 0; i < 5; ++i) {
+        sf::Text t(opts[i], assets.getFont("main"), 24);
+        UI::centerText(t, sf::Vector2f(cx, 260 + i * 60));
         if (i == menuSelection) {
             float pulse = 1.0f + 0.05f * std::sin(totalTime * 5.0f);
             t.setFillColor(sf::Color::Yellow);
@@ -404,7 +414,7 @@ void Renderer::drawAboutPage() {
 
     float cx = window.getSize().x / 2.0f;
     sf::Text t("SYSTEM PROTOCOLS", assets.getFont("main"), 40);
-    t.setFillColor(UI::NeonGreen);
+    t.setFillColor(UI::CyberTeal);
     UI::centerText(t, sf::Vector2f(cx, 80));
     window.draw(t);
 
@@ -421,6 +431,96 @@ void Renderer::drawAboutPage() {
     UI::centerText(cl, sf::Vector2f(cx, 500));
     cl.setFillColor(UI::MutedText);
     window.draw(cl);
+}
+
+void Renderer::drawAchievementsPage() {
+    sf::RectangleShape bg(sf::Vector2f(window.getSize().x, window.getSize().y));
+    bg.setFillColor(UI::DeepCharcoal);
+    window.draw(bg);
+
+    float cx = window.getSize().x / 2.0f;
+    sf::Text t("ACHIEVEMENTS & PROTOCOLS", assets.getFont("main"), 40);
+    t.setFillColor(UI::MintGreen);
+    UI::centerText(t, sf::Vector2f(cx, 60));
+    window.draw(t);
+
+    UserProfile user = userManager.getCurrentUserProfile();
+    std::vector<Achievement> allAchs = {
+        {"first_match", "PURGE INITIATE", "Clear your first sequence of nodes."},
+        {"vet_purger", "VETERAN PURGER", "Purge a total of 100 nodes."},
+        {"elite_op", "ELITE OPERATIVE", "Complete a match on ELITE difficulty."}
+    };
+
+    float startX = 100, startY = 140;
+    float cardW = 600, cardH = 80;
+
+    for (size_t i = 0; i < allAchs.size(); ++i) {
+        bool unlocked = std::find(user.achievements.begin(), user.achievements.end(), allAchs[i].id) != user.achievements.end();
+        
+        sf::RectangleShape card = UI::createPanel(sf::Vector2f(cardW, cardH), sf::Vector2f(startX, startY + i * 100));
+        card.setFillColor(sf::Color(37, 37, 41));
+        if (unlocked) card.setOutlineColor(UI::MintGreen);
+        else card.setOutlineColor(sf::Color(69, 69, 69));
+        window.draw(card);
+
+        sf::Text title(allAchs[i].name, assets.getFont("main"), 20);
+        title.setPosition(startX + 20, startY + i * 100 + 15);
+        title.setFillColor(unlocked ? UI::PureWhite : UI::MutedText);
+        window.draw(title);
+
+        sf::Text desc(allAchs[i].description, assets.getFont("main"), 14);
+        desc.setPosition(startX + 20, startY + i * 100 + 45);
+        desc.setFillColor(UI::MutedText);
+        window.draw(desc);
+
+        if (unlocked) {
+            sf::Text status("UNLOCKED", assets.getFont("main"), 14);
+            status.setPosition(startX + cardW - 100, startY + i * 100 + 30);
+            status.setFillColor(UI::MintGreen);
+            window.draw(status);
+        }
+    }
+
+    sf::Text esc("PRESS ESC TO RETURN", assets.getFont("main"), 18);
+    UI::centerText(esc, sf::Vector2f(cx, 550));
+    esc.setFillColor(UI::MutedText);
+    window.draw(esc);
+}
+
+void Renderer::drawSettingsPage() {
+    sf::RectangleShape bg(sf::Vector2f(window.getSize().x, window.getSize().y));
+    bg.setFillColor(sf::Color::Black);
+    window.draw(bg);
+
+    float cx = window.getSize().x / 2.0f;
+    sf::Text t("SYSTEM CONFIGURATION", assets.getFont("main"), 40);
+    t.setFillColor(UI::MatrixGreen);
+    UI::centerText(t, sf::Vector2f(cx, 80));
+    window.draw(t);
+
+    float vol = assets.getVolume();
+    int blocks = (int)(vol / 10.0f);
+    std::string volStr = "VOLUME: [";
+    for(int i=0; i<10; ++i) volStr += (i < blocks) ? "||" : "..";
+    volStr += "] " + std::to_string((int)vol) + "%";
+
+    sf::Text vText(volStr, assets.getFont("main"), 24);
+    vText.setFillColor(UI::MatrixGreen);
+    UI::centerText(vText, sf::Vector2f(cx, 250));
+    window.draw(vText);
+
+    sf::Text hints("[+] INCREASE | [-] DECREASE\n\nPRESS ESC TO SAVE AND EXIT", assets.getFont("main"), 18);
+    hints.setFillColor(UI::MatrixGreen);
+    UI::centerText(hints, sf::Vector2f(cx, 400));
+    window.draw(hints);
+
+    // ASCII Border
+    sf::RectangleShape border(sf::Vector2f(600, 400));
+    border.setPosition(cx - 300, 100);
+    border.setFillColor(sf::Color::Transparent);
+    border.setOutlineThickness(2);
+    border.setOutlineColor(UI::MatrixGreen);
+    window.draw(border);
 }
 
 void Renderer::addPopup(std::string c, sf::Vector2f p, sf::Color clr) {
@@ -450,7 +550,7 @@ void Renderer::drawDifficultySelection() {
     drawGlassPanel(sf::Vector2f(500, 400), sf::Vector2f(cx - 250, cy - 200));
 
     sf::Text h("SELECT DIFFICULTY", assets.getFont("main"), 40);
-    h.setFillColor(UI::NeonGreen);
+    h.setFillColor(UI::CyberTeal);
     UI::centerText(h, sf::Vector2f(cx, cy - 150));
     window.draw(h);
 

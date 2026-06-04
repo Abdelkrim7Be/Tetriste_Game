@@ -22,7 +22,9 @@ enum class GameState {
     DIFFICULTY_SELECT,
     PLAYING,
     PAUSED,
-    GAME_OVER
+    GAME_OVER,
+    ACHIEVEMENTS,
+    SETTINGS
 };
 
 enum class AuthState {
@@ -99,6 +101,8 @@ private:
     void drawGameOver(int finalScore);
     void drawPiece(Piece &piece, float x, float y, float scale = 1.0f);
     void drawAboutPage();
+    void drawAchievementsPage();
+    void drawSettingsPage();
     void drawLeaderboard(float x, float y);
     void drawStats(float x, float y);
     std::string getTextureName(T_Color color, T_Shape shape);
