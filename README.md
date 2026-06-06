@@ -184,8 +184,8 @@ sudo apt install build-essential cmake libsfml-dev
 ### Build & run
 
 ```bash
-git clone https://github.com/Abdelkrim7Be/Tetriste_Game.git
-cd Tetriste_Game
+git clone https://github.com/Abdelkrim7Be/Tetriste.git
+cd Tetriste
 mkdir -p build && cd build
 cmake ..
 make -j$(nproc)
