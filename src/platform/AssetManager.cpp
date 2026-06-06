@@ -4,12 +4,12 @@
 
 using json = nlohmann::json;
 
-AssetManager::AssetManager() {
+AssetManager::AssetManager(const std::string& assetsDir) : assetsDir(assetsDir) {
     loadConfig();
 }
 
 void AssetManager::loadConfig() {
-    std::ifstream file("assets/config.json");
+    std::ifstream file(assetsDir + "/config.json");
     if (!file.is_open()) return;
     try {
         json j;
@@ -24,7 +24,7 @@ void AssetManager::loadConfig() {
 void AssetManager::saveConfig() {
     json j;
     j["volume"] = this->volume;
-    std::ofstream file("assets/config.json");
+    std::ofstream file(assetsDir + "/config.json");
     if (file.is_open()) {
         file << j.dump(4);
         file.close();
@@ -34,6 +34,7 @@ void AssetManager::saveConfig() {
 bool AssetManager::loadTexture(std::string name, std::string filename) {
     sf::Texture tex;
     if (tex.loadFromFile(filename)) {
+        tex.setSmooth(false);
         this->textures[name] = tex;
         return true;
     }

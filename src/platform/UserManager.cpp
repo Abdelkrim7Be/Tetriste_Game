@@ -46,10 +46,34 @@ void UserManager::logout() {
 
 void UserManager::updateRecord(int score) {
     if (currentUserPseudo.empty()) return;
-    if (score > allUsers[currentUserPseudo].record) {
-        allUsers[currentUserPseudo].record = score;
-        saveUsers();
+    UserProfile& profile = allUsers[currentUserPseudo];
+    profile.lastScore = score;
+    if (score > profile.record) {
+        profile.record = score;
     }
+    saveUsers();
+}
+
+void UserManager::beginSession() {
+    if (currentUserPseudo.empty()) return;
+    allUsers[currentUserPseudo].matchesPlayed++;
+    saveUsers();
+}
+
+void UserManager::endSession(int finalScore) {
+    if (currentUserPseudo.empty()) return;
+    UserProfile& profile = allUsers[currentUserPseudo];
+    profile.lastScore = finalScore;
+    if (finalScore > profile.record) {
+        profile.record = finalScore;
+    }
+    saveUsers();
+}
+
+void UserManager::addNodesPurged(int count) {
+    if (currentUserPseudo.empty() || count <= 0) return;
+    allUsers[currentUserPseudo].nodesPurged += count;
+    saveUsers();
 }
 
 void UserManager::updateProfile(const UserProfile& profile) {
@@ -118,6 +142,7 @@ void UserManager::loadUsers() {
             } else if (it.value().is_object()) {
                 auto val = it.value();
                 if (val.contains("record")) p.record = val["record"];
+                if (val.contains("lastScore")) p.lastScore = val["lastScore"];
                 if (val.contains("avatarId")) p.avatarId = val["avatarId"];
                 if (val.contains("pinHash")) p.pinHash = val["pinHash"];
                 if (val.contains("matchesPlayed")) p.matchesPlayed = val["matchesPlayed"];
@@ -143,6 +168,7 @@ void UserManager::saveUsers() {
         const UserProfile& p = pair.second;
         json profileObj;
         profileObj["record"] = p.record;
+        profileObj["lastScore"] = p.lastScore;
         profileObj["avatarId"] = p.avatarId;
         profileObj["pinHash"] = p.pinHash;
         profileObj["matchesPlayed"] = p.matchesPlayed;
@@ -161,7 +187,12 @@ void UserManager::saveUsers() {
 }
 
 void UserManager::migrateOldFormat() {
-    std::ifstream file("assets/scores.txt");
+    std::string dir = "assets";
+    const size_t slash = filename.find_last_of("/\\");
+    if (slash != std::string::npos) {
+        dir = filename.substr(0, slash);
+    }
+    std::ifstream file(dir + "/scores.txt");
     if (!file.is_open()) return;
 
     std::string line;

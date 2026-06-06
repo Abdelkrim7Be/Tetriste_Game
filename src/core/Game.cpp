@@ -1,6 +1,7 @@
 #include "gameDeclaration.h"
 #include <cmath>
 #include <iostream>
+#include <unordered_set>
 #include <vector>
 
 Game::Game(int colorIndex, int shapeIndex)
@@ -62,11 +63,15 @@ Piece* Game::retrieveTail(Game *game)
 bool Game::insertPieceInRight(Game *game, Piece *newPiece)
 {
     if (game == nullptr || newPiece == nullptr) return false;
-    
+
+    if (game->piecesCount == 0) game->head = nullptr;
+
     Piece *tail = retrieveTail(game);
     if (tail == nullptr) {
         game->head = newPiece;
         newPiece->nextPiece = newPiece;
+        newPiece->colorPrev = newPiece->colorNext = newPiece;
+        newPiece->shapePrev = newPiece->shapeNext = newPiece;
     } else {
         tail->nextPiece = newPiece;
         newPiece->nextPiece = game->head;
@@ -131,20 +136,155 @@ void Game::updateColorAfterAdding(Piece* piece) {
     }
 }
 
+static Piece *findRingPred(Game *game, Piece *piece) {
+    if (game == nullptr || game->head == nullptr || piece == nullptr || game->piecesCount <= 1)
+        return nullptr;
+    Piece *p = game->head;
+    do {
+        if (p->nextPiece == piece) return p;
+        p = p->nextPiece;
+    } while (p != game->head);
+    return nullptr;
+}
+
+static int consecutiveRun(Game *game, Piece *piece, bool byColor) {
+    if (game == nullptr || piece == nullptr) return 1;
+    int forward = 1;
+    Piece *fwd = piece->nextPiece;
+    for (int i = 1; i < game->piecesCount && fwd != piece; ++i) {
+        bool match = byColor ? (fwd->color == piece->color) : (fwd->shape == piece->shape);
+        if (!match) break;
+        forward++;
+        fwd = fwd->nextPiece;
+    }
+    int backward = 0;
+    Piece *back = findRingPred(game, piece);
+    for (int i = 0; i < game->piecesCount - 1 && back != nullptr && back != piece; ++i) {
+        bool match = byColor ? (back->color == piece->color) : (back->shape == piece->shape);
+        if (!match) break;
+        backward++;
+        back = findRingPred(game, back);
+    }
+    int total = forward + backward;
+    return std::min(total, game->piecesCount);
+}
+
 int Game::similarSequenceTracker(Game *game, Piece *newPiece)
 {
-    int colorSequence = 1, shapeSequence = 1;
-    Piece *current = newPiece->nextPiece;
-    for (int i = 1; i < game->piecesCount; i++)
-    {
-        if (current == newPiece) break;
-        if (colorSequence == i && current->color == newPiece->color)
-            colorSequence++;
-        if (shapeSequence == i && current->shape == newPiece->shape)
-            shapeSequence++;
-        current = current->nextPiece;
-    }
+    int colorSequence = consecutiveRun(game, newPiece, true);
+    int shapeSequence = consecutiveRun(game, newPiece, false);
     return (colorSequence > shapeSequence) ? colorSequence : shapeSequence;
+}
+
+static void buildVirtualRing(Game *game, Piece *incoming, bool insertLeft,
+                             std::vector<Piece *> &ring, std::vector<bool> &isIncoming) {
+    ring.clear();
+    isIncoming.clear();
+    if (game == nullptr || incoming == nullptr || game->piecesCount == 0) return;
+
+    if (insertLeft) {
+        ring.push_back(incoming);
+        isIncoming.push_back(true);
+    }
+    Piece *p = game->head;
+    for (int i = 0; i < game->piecesCount; ++i) {
+        ring.push_back(p);
+        isIncoming.push_back(false);
+        p = p->nextPiece;
+    }
+    if (!insertLeft) {
+        ring.push_back(incoming);
+        isIncoming.push_back(true);
+    }
+}
+
+static int virtualRunAt(const std::vector<Piece *> &ring, const std::vector<bool> &isIncoming,
+                        int index, bool byColor) {
+    if (ring.empty() || index < 0 || index >= (int)ring.size()) return 1;
+    int m = (int)ring.size();
+    T_Color c0 = ring[index]->color;
+    T_Shape s0 = ring[index]->shape;
+    (void)isIncoming;
+
+    int forward = 1;
+    for (int i = 1; i < m; ++i) {
+        int j = (index + i) % m;
+        bool match = byColor ? (ring[j]->color == c0) : (ring[j]->shape == s0);
+        if (!match) break;
+        forward++;
+    }
+    int backward = 0;
+    for (int i = 1; i < m; ++i) {
+        int j = (index - i + m) % m;
+        bool match = byColor ? (ring[j]->color == c0) : (ring[j]->shape == s0);
+        if (!match) break;
+        backward++;
+    }
+    return std::min(forward + backward, m);
+}
+
+static int virtualComboAt(const std::vector<Piece *> &ring, const std::vector<bool> &isIncoming, int index) {
+    int colorRun = virtualRunAt(ring, isIncoming, index, true);
+    int shapeRun = virtualRunAt(ring, isIncoming, index, false);
+    return (colorRun > shapeRun) ? colorRun : shapeRun;
+}
+
+/** Board nodes in the consecutive arc on the winning attribute (color or shape). */
+static void collectWinningRunOnRing(const std::vector<Piece *> &ring, const std::vector<bool> &isIncoming,
+                                    int anchorIndex, std::unordered_set<Piece *> &out) {
+    int m = (int)ring.size();
+    if (anchorIndex < 0 || anchorIndex >= m) return;
+
+    int colorRun = virtualRunAt(ring, isIncoming, anchorIndex, true);
+    int shapeRun = virtualRunAt(ring, isIncoming, anchorIndex, false);
+    int combo = (colorRun > shapeRun) ? colorRun : shapeRun;
+    if (combo < 3) return;
+
+    bool byColor = colorRun > shapeRun;
+    T_Color c0 = ring[anchorIndex]->color;
+    T_Shape s0 = ring[anchorIndex]->shape;
+
+    for (int i = 0; i < m; ++i) {
+        int j = (anchorIndex + i) % m;
+        if (i > 0) {
+            bool match = byColor ? (ring[j]->color == c0) : (ring[j]->shape == s0);
+            if (!match) break;
+        }
+        if (!isIncoming[j]) out.insert(ring[j]);
+    }
+    for (int i = 1; i < m; ++i) {
+        int j = (anchorIndex - i + m) % m;
+        bool match = byColor ? (ring[j]->color == c0) : (ring[j]->shape == s0);
+        if (!match) break;
+        if (!isIncoming[j]) out.insert(ring[j]);
+    }
+}
+
+void Game::collectMatchPreview(Game *game, Piece *incoming, std::vector<Piece *> &out) {
+    out.clear();
+    if (game == nullptr || incoming == nullptr || game->piecesCount < 2) return;
+
+    std::unordered_set<Piece *> marked;
+
+    for (bool insertLeft : {true, false}) {
+        std::vector<Piece *> ring;
+        std::vector<bool> isIncoming;
+        buildVirtualRing(game, incoming, insertLeft, ring, isIncoming);
+        if (ring.empty()) continue;
+
+        int scanCount = insertLeft ? 1 : game->piecesCount;
+        for (int si = 0; si < scanCount; ++si) {
+            int colorRun = virtualRunAt(ring, isIncoming, si, true);
+            int shapeRun = virtualRunAt(ring, isIncoming, si, false);
+            int combo = (colorRun > shapeRun) ? colorRun : shapeRun;
+            if (combo >= 3) {
+                collectWinningRunOnRing(ring, isIncoming, si, marked);
+                break;
+            }
+        }
+    }
+
+    out.assign(marked.begin(), marked.end());
 }
 
 int Game::updateGame(Game *game)

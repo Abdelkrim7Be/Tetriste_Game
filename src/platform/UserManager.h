@@ -8,6 +8,7 @@
 struct UserProfile {
     std::string pseudo;
     int record = 0;
+    int lastScore = 0;
     std::string avatarId = "blue_square";
     std::string pinHash = ""; // 4-digit PIN stored as string for simplicity
     
@@ -28,6 +29,9 @@ public:
 
     void updateRecord(int score);
     void updateProfile(const UserProfile& profile);
+    void beginSession();
+    void endSession(int finalScore);
+    void addNodesPurged(int count);
     
     int getCurrentUserRecord() const;
     std::string getCurrentUserPseudo() const;

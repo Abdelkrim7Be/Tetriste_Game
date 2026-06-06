@@ -1,10 +1,27 @@
-GUIDE.md
+# Build outputs
 build/
+obj/
+cmake-build-*/
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
 !Makefile
-Tetriste
 *.o
 *.exe
+
+# Binaries
+Tetriste
+Tetriste_debug
+test_logic
+test_userManager
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Local runtime overrides (optional — keep defaults in repo)
+# assets/config.json

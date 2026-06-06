@@ -66,6 +66,36 @@ void test_topRecords() {
     std::cout << "topRecords passed!" << std::endl;
 }
 
+void test_sessionPersistence() {
+    std::cout << "Testing beginSession/endSession..." << std::endl;
+    std::string testFile = "assets/test_users_session_profiles.json";
+    std::remove(testFile.c_str());
+
+    UserManager um(testFile);
+    um.loginOrCreate("Operator", "4321");
+    um.beginSession();
+    um.addNodesPurged(3);
+    um.endSession(42);
+
+    UserManager reloaded(testFile);
+    reloaded.loginOrCreate("Operator", "4321");
+    UserProfile profile = reloaded.getCurrentUserProfile();
+    assert(profile.matchesPlayed == 1);
+    assert(profile.nodesPurged == 3);
+    assert(profile.lastScore == 42);
+    assert(profile.record == 42);
+
+    reloaded.beginSession();
+    reloaded.endSession(25);
+    profile = reloaded.getCurrentUserProfile();
+    assert(profile.matchesPlayed == 2);
+    assert(profile.lastScore == 25);
+    assert(profile.record == 42);
+
+    std::remove(testFile.c_str());
+    std::cout << "sessionPersistence passed!" << std::endl;
+}
+
 void test_migration() {
     std::cout << "Testing migration from old format..." << std::endl;
     std::ofstream legacy("assets/scores.txt");
@@ -91,6 +121,7 @@ int main() {
     std::remove("assets/scores.txt");
     test_loginOrCreate();
     test_topRecords();
+    test_sessionPersistence();
     test_migration();
     std::cout << "All Phase 1 UserManager tests passed!" << std::endl;
     return 0;

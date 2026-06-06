@@ -9,7 +9,7 @@
 
 class AssetManager {
 public:
-    AssetManager();
+    explicit AssetManager(const std::string& assetsDir = "assets");
     
     bool loadTexture(std::string name, std::string filename);
     sf::Texture &getTexture(std::string name);
@@ -31,6 +31,7 @@ public:
     void saveConfig();
 
     private:
+    std::string assetsDir;
     std::map<std::string, sf::Texture> textures;
     std::map<std::string, sf::Font> fonts;
     std::map<std::string, sf::SoundBuffer> soundBuffers;

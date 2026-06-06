@@ -34,6 +34,7 @@ public:
     void updateShapeAfterAdding(Piece* piece);
     void updateColorAfterAdding(Piece* piece);
     int similarSequenceTracker(Game* game, Piece *newPiece);
+    void collectMatchPreview(Game* game, Piece *incoming, std::vector<Piece*>& out);
     int updateGame(Game* game);
     void removePieceFromRelationships(Piece* piece);
 

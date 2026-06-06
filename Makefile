@@ -1,9 +1,18 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++11 -I./include
+CXXFLAGS = -Wall -Wextra -std=c++11 \
+	-I./include \
+	-I./src/core \
+	-I./src/platform \
+	-I./src/ui
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-audio -lsfml-system
 
 TARGET = Tetriste
-SRCS = main.cpp Game.cpp Piece.cpp AssetManager.cpp Renderer.cpp UserManager.cpp
+SRCS = src/main.cpp \
+	src/core/Game.cpp \
+	src/core/Piece.cpp \
+	src/platform/AssetManager.cpp \
+	src/platform/UserManager.cpp \
+	src/ui/Renderer.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
@@ -15,6 +24,10 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) \
+		src/main.o \
+		src/core/*.o \
+		src/platform/*.o \
+		src/ui/*.o
 
 .PHONY: all clean
